@@ -1,0 +1,150 @@
+.profile-page {
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+.profile-header {
+  background: #1e293b;
+  padding: 1.5rem 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  border: 1px solid #334155;
+}
+
+.profile-content {
+  background: #1e293b;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  border: 1px solid #334155;
+}
+
+.profile-info {
+  text-align: center;
+  padding: 2rem;
+  border-bottom: 1px solid #334155;
+  margin-bottom: 2rem;
+}
+
+.profile-info h2 {
+  color: #e2e8f0;
+  margin: 0;
+  font-weight: 600;
+}
+
+.username {
+  color: #94a3b8;
+  margin: 0.5rem 0;
+  font-size: 1rem;
+}
+
+.currency {
+  font-size: 1.5rem;
+  color: #10b981;
+  margin: 1rem 0;
+  font-weight: 600;
+}
+
+.stats-section {
+  margin-bottom: 3rem;
+}
+
+.stats-section h3 {
+  color: #e2e8f0;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  background: #0f172a;
+  border-radius: 8px;
+  text-align: center;
+  border: 1px solid #334155;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin-bottom: 0.5rem;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0ea5e9;
+}
+
+.history-section h3 {
+  color: #e2e8f0;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.games-history {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: #0f172a;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  transition: all 0.2s;
+}
+
+.history-item:hover {
+  background: #1e293b;
+}
+
+.history-info {
+  display: flex;
+  gap: 1rem;
+  color: #e2e8f0;
+}
+
+.game-mode {
+  font-weight: 600;
+  text-transform: capitalize;
+  color: #e2e8f0;
+}
+
+.game-date {
+  color: #94a3b8;
+}
+
+.game-result {
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.game-result.won {
+  background: #064e3b;
+  color: #10b981;
+  border: 1px solid #10b981;
+}
+
+.game-result.lost {
+  background: #450a0a;
+  color: #ef4444;
+  border: 1px solid #ef4444;
+}

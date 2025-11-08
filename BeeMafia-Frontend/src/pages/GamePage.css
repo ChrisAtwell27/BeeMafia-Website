@@ -1,0 +1,241 @@
+.game-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.game-header {
+  background: #1e293b;
+  padding: 1rem 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #334155;
+}
+
+.game-header h1 {
+  margin: 0;
+  color: #0ea5e9;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.game-phase {
+  color: #94a3b8;
+  margin: 0.25rem 0 0 0;
+  font-size: 0.9rem;
+}
+
+.game-phase strong {
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.timer {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #0ea5e9;
+  letter-spacing: -0.025em;
+}
+
+.game-content {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.game-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.game-sidebar {
+  display: flex;
+  flex-direction: column;
+}
+
+.btn-toggle-role {
+  padding: 0.75rem 1.25rem;
+  background: #0ea5e9;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-toggle-role:hover {
+  background: #0284c7;
+  transform: translateY(-1px);
+}
+
+.waiting-room {
+  background: #1e293b;
+  padding: 3rem;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  border: 1px solid #334155;
+}
+
+.waiting-room h2 {
+  color: #0ea5e9;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.role-reveal {
+  animation: fadeIn 0.5s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.role-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.role-modal {
+  background: #1e293b;
+  padding: 2rem;
+  border-radius: 12px;
+  max-width: 600px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+  border: 1px solid #334155;
+}
+
+@media (max-width: 768px) {
+  .game-content {
+    grid-template-columns: 1fr;
+  }
+
+  .game-sidebar {
+    height: 400px;
+  }
+}
+
+/* Debug Controls */
+.debug-controls {
+  background: rgba(255, 20, 147, 0.1);
+  border: 2px dashed rgba(255, 20, 147, 0.5);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.debug-controls h3 {
+  color: #ff69b4;
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+}
+
+.debug-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.btn-debug {
+  background: rgba(138, 43, 226, 0.2);
+  border: 1px solid rgba(138, 43, 226, 0.5);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 0.9rem;
+}
+
+.btn-debug:hover {
+  background: rgba(138, 43, 226, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-debug.btn-bee {
+  background: rgba(255, 215, 0, 0.2);
+  border-color: rgba(255, 215, 0, 0.5);
+}
+
+.btn-debug.btn-bee:hover {
+  background: rgba(255, 215, 0, 0.4);
+}
+
+.btn-debug.btn-wasp {
+  background: rgba(139, 0, 0, 0.2);
+  border-color: rgba(139, 0, 0, 0.5);
+}
+
+.btn-debug.btn-wasp:hover {
+  background: rgba(139, 0, 0, 0.4);
+}
+
+.debug-info {
+  color: #ff69b4;
+  font-size: 0.85rem;
+  margin: 0.5rem 0 0 0;
+  opacity: 0.8;
+}
+
+.debug-features {
+  background: rgba(138, 43, 226, 0.1);
+  border: 1px solid rgba(138, 43, 226, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.debug-features h3 {
+  color: #8a2be2;
+  font-size: 1rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.debug-features ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.debug-features li {
+  color: #b0b0b0;
+  padding: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.bot-info {
+  color: #8a2be2;
+  font-style: italic;
+  margin-top: 0.5rem;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}

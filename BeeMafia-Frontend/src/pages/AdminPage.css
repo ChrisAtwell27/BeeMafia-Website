@@ -1,0 +1,354 @@
+/* Admin Page Styles */
+.admin-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a0033 0%, #220044 25%, #2d1b69 50%, #0f172a 100%);
+  padding: 2rem;
+}
+
+/* Auth Container */
+.admin-auth-container {
+  max-width: 400px;
+  margin: 10rem auto;
+  background: rgba(30, 30, 40, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid rgba(138, 43, 226, 0.3);
+  padding: 2rem;
+  box-shadow: 0 10px 40px rgba(138, 43, 226, 0.3);
+}
+
+.admin-auth-container h1 {
+  color: #fff;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.admin-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.admin-auth-form label {
+  color: #b0b0b0;
+  font-size: 0.9rem;
+}
+
+.admin-hint {
+  text-align: center;
+  color: #808080;
+  font-size: 0.85rem;
+  margin-top: 1rem;
+  font-style: italic;
+}
+
+/* Admin Header */
+.admin-header {
+  background: rgba(30, 30, 40, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid rgba(138, 43, 226, 0.3);
+  padding: 1.5rem 2rem;
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-header h1 {
+  color: #fff;
+  margin: 0;
+}
+
+.admin-header-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+/* Admin Content */
+.admin-content {
+  display: grid;
+  gap: 2rem;
+}
+
+.admin-section {
+  background: rgba(30, 30, 40, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid rgba(138, 43, 226, 0.3);
+  padding: 2rem;
+}
+
+.admin-section h2 {
+  color: #fff;
+  margin: 0 0 1.5rem 0;
+  font-size: 1.5rem;
+  border-bottom: 2px solid rgba(138, 43, 226, 0.3);
+  padding-bottom: 0.5rem;
+}
+
+/* Form Elements */
+.announcement-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.admin-input {
+  background: rgba(20, 20, 30, 0.8);
+  border: 1px solid rgba(138, 43, 226, 0.4);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.admin-input:focus {
+  outline: none;
+  border-color: #8a2be2;
+  box-shadow: 0 0 10px rgba(138, 43, 226, 0.3);
+}
+
+.admin-textarea {
+  background: rgba(20, 20, 30, 0.8);
+  border: 1px solid rgba(138, 43, 226, 0.4);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: #fff;
+  font-size: 0.95rem;
+  resize: vertical;
+  min-height: 100px;
+}
+
+.admin-textarea:focus {
+  outline: none;
+  border-color: #8a2be2;
+  box-shadow: 0 0 10px rgba(138, 43, 226, 0.3);
+}
+
+/* Announcements List */
+.announcements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.no-announcements {
+  text-align: center;
+  color: #808080;
+  padding: 2rem;
+  font-style: italic;
+}
+
+.announcement-card {
+  background: rgba(20, 20, 30, 0.6);
+  border: 1px solid rgba(138, 43, 226, 0.3);
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: all 0.3s;
+}
+
+.announcement-card:hover {
+  background: rgba(30, 30, 40, 0.8);
+  border-color: #8a2be2;
+}
+
+.announcement-card.inactive {
+  opacity: 0.6;
+  border-color: rgba(100, 100, 100, 0.3);
+}
+
+.announcement-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.announcement-header h3 {
+  color: #fff;
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.status-badge.active {
+  background: rgba(0, 255, 0, 0.2);
+  color: #00ff00;
+  border: 1px solid rgba(0, 255, 0, 0.4);
+}
+
+.status-badge.inactive {
+  background: rgba(255, 0, 0, 0.2);
+  color: #ff6666;
+  border: 1px solid rgba(255, 0, 0, 0.4);
+}
+
+.announcement-view p {
+  color: #b0b0b0;
+  margin: 0 0 1rem 0;
+  line-height: 1.5;
+}
+
+.announcement-meta {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1rem;
+  color: #808080;
+  font-size: 0.85rem;
+}
+
+.announcement-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* Admin Buttons */
+.btn-admin-primary {
+  background: linear-gradient(135deg, #8a2be2, #6a1b9a);
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-admin-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(138, 43, 226, 0.4);
+}
+
+.btn-admin-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-admin-secondary {
+  background: rgba(80, 80, 90, 0.8);
+  border: 1px solid rgba(138, 43, 226, 0.3);
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-admin-secondary:hover {
+  background: rgba(100, 100, 110, 0.8);
+}
+
+.btn-admin-success {
+  background: linear-gradient(135deg, #00c851, #007e33);
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 0.9rem;
+}
+
+.btn-admin-success:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 200, 81, 0.4);
+}
+
+.btn-admin-warning {
+  background: linear-gradient(135deg, #ff9800, #f57c00);
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 0.9rem;
+}
+
+.btn-admin-warning:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+}
+
+.btn-admin-danger {
+  background: linear-gradient(135deg, #ff4444, #cc0000);
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 0.9rem;
+}
+
+.btn-admin-danger:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(255, 68, 68, 0.4);
+}
+
+.btn-admin-edit {
+  background: linear-gradient(135deg, #00bcd4, #0097a7);
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 0.9rem;
+}
+
+.btn-admin-edit:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 188, 212, 0.4);
+}
+
+.admin-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .admin-page {
+    padding: 1rem;
+  }
+
+  .admin-header {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .admin-header-actions {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .announcement-actions {
+    flex-direction: column;
+  }
+
+  .announcement-actions button {
+    width: 100%;
+  }
+}

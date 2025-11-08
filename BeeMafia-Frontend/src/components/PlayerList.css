@@ -1,0 +1,56 @@
+.player-list {
+  background: #1e293b;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  border: 1px solid #334155;
+}
+
+.player-list h3 {
+  margin: 0 0 1rem 0;
+  color: #e2e8f0;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.players-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.player-card {
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  border: 2px solid;
+  transition: all 0.2s;
+}
+
+.player-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+}
+
+.player-card.alive {
+  border-color: #10b981;
+  background: #064e3b;
+}
+
+.player-card.dead {
+  border-color: #475569;
+  background: #0f172a;
+  opacity: 0.6;
+}
+
+.player-name {
+  font-weight: 600;
+  color: #e2e8f0;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.player-status {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}

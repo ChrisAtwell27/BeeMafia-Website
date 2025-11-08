@@ -1,0 +1,12 @@
+{
+  "name": "@beemafia/shared",
+  "version": "1.0.0",
+  "description": "Shared code between BeeMafia frontend and backend",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "keywords": ["beemafia", "shared", "roles", "game"],
+  "author": "",
+  "license": "MIT"
+}
