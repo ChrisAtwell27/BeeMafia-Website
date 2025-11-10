@@ -808,18 +808,46 @@ const ROLES = {
         name: 'Pirate Beetle',
         emoji: '🏴‍☠️',
         team: 'neutral',
-        subteam: 'chaos',
-        description: 'You are a **Pirate Beetle**! You must plunder players by dueling them. Choose your target at dawn, they respond at night, and results appear at dawn.',
-        abilities: ['Challenge one player to a duel (rock-paper-scissors)', 'Target chooses response during night while roleblocked', 'Win 2 duels to win the game', 'Basic defense', 'Become Butterfly after winning'],
+        subteam: 'killing',
+        description: 'You are a **Pirate Beetle**! You must plunder players by dueling them. Choose your target at dawn, they respond at night, and results appear at dawn. **If you win the duel, your target dies!**',
+        abilities: ['Challenge one player to a duel (rock-paper-scissors)', 'Target chooses response during night while roleblocked', 'Win duel = target dies (basic attack)', 'Win 2 duels to win the game', 'Basic defense', 'Become Butterfly after winning'],
         winCondition: 'Successfully plunder 2 players by winning duels',
         nightAction: false, // No night action - target responds at night
         duskAction: true, // Select target at dusk
         actionType: 'pirate_duel',
-        attack: 0,
+        attack: 1, // Basic attack when winning duel
         defense: 1, // Basic defense
         duelsWon: 0,
         duelsNeeded: 2,
         color: '#8B4513'
+    },
+    WEREBEE: {
+        name: 'Werebee',
+        emoji: '🐺',
+        team: 'neutral',
+        subteam: 'killing',
+        description: 'You are a **Werebee**! When there is a full moon (every other night), you transform and attack with powerful force, killing your target and anyone who visits you or your target.',
+        abilities: ['Attack on full moon nights only', 'Powerful attack (kills through basic defense)', 'Kill all visitors to you and your target', 'Basic defense'],
+        winCondition: 'Be the last player alive',
+        nightAction: true,
+        actionType: 'werewolf',
+        attack: 2, // Powerful attack
+        defense: 1, // Basic defense
+        color: '#8B4513'
+    },
+    ZOMBEE: {
+        name: 'Zombee',
+        emoji: '🧟',
+        team: 'zombee',
+        subteam: 'killing',
+        description: 'You are a **Zombee**! Vote with other Zombees each night to infect a target. Players with 0 or 1 defense are infected and become Zombees. A random Zombee carries out the infection.',
+        abilities: ['Vote with Zombees to choose infection target', 'Infect players with weak defense (0-1)', 'Strong defense (2+) prevents infection', 'Random Zombee performs the infection', 'Basic defense'],
+        winCondition: 'Convert all players to Zombees or achieve majority',
+        nightAction: true,
+        actionType: 'zombee_vote',
+        attack: 0, // Infection, not attack
+        defense: 1, // Basic defense
+        color: '#22c55e'
     },
     GUARDIAN_ANT: {
         name: 'Guardian Ant',

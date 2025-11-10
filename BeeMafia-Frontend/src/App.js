@@ -10,6 +10,7 @@ import UsernameEntry from './pages/UsernameEntry';
 import LobbyPage from './pages/LobbyPage';
 import GamePage from './pages/GamePage';
 import AdminPage from './pages/AdminPage';
+import RoleBuilder from './pages/RoleBuilder';
 
 import './App.css';
 
@@ -46,6 +47,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <GamePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/role-builder"
+                element={
+                  <ProtectedRoute>
+                    <RoleBuilder />
                   </ProtectedRoute>
                 }
               />

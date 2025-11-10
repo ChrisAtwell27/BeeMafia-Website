@@ -1,141 +1,150 @@
 const express = require('express');
 const router = express.Router();
-
-// For now, we'll use in-memory storage since MongoDB is optional
-// When MongoDB is configured, this will use the Announcement model
-let announcements = [
-    {
-        id: 1,
-        title: "BeeMafia celebrates five years!",
-        content: "Join us in celebrating five amazing years of deception, strategy, and community!",
-        author: "Admin",
-        createdAt: new Date("2024-02-23"),
-        active: true,
-        priority: 1
-    }
-];
-
-let nextId = 2;
+const Announcement = require('../../models/Announcement');
 
 // Get all active announcements (public)
-router.get('/', (req, res) => {
-    const activeAnnouncements = announcements
-        .filter(a => a.active)
-        .sort((a, b) => b.priority - a.priority || new Date(b.createdAt) - new Date(a.createdAt))
-        .slice(0, 5); // Limit to 5 most recent
+router.get('/', async (req, res) => {
+    try {
+        const activeAnnouncements = await Announcement.find({ active: true })
+            .sort({ priority: -1, createdAt: -1 })
+            .limit(5)
+            .select('title content author createdAt active priority');
 
-    res.json(activeAnnouncements);
+        res.json(activeAnnouncements);
+    } catch (error) {
+        console.error('Error fetching announcements:', error);
+        res.status(500).json({ error: 'Failed to fetch announcements' });
+    }
 });
 
 // Get all announcements (admin)
-router.get('/all', (req, res) => {
-    // Check if user is admin (simplified for now)
-    const isAdmin = req.headers['x-admin-key'] === process.env.ADMIN_KEY || 'admin123';
+router.get('/all', async (req, res) => {
+    try {
+        // Check if user is admin (simplified for now)
+        const isAdmin = req.headers['x-admin-key'] === process.env.ADMIN_KEY || 'admin123';
 
-    if (!isAdmin) {
-        return res.status(403).json({ error: 'Admin access required' });
+        if (!isAdmin) {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+
+        const allAnnouncements = await Announcement.find({})
+            .sort({ createdAt: -1 });
+
+        res.json(allAnnouncements);
+    } catch (error) {
+        console.error('Error fetching all announcements:', error);
+        res.status(500).json({ error: 'Failed to fetch announcements' });
     }
-
-    res.json(announcements);
 });
 
 // Create new announcement (admin)
-router.post('/', (req, res) => {
-    // Check if user is admin
-    const isAdmin = req.headers['x-admin-key'] === process.env.ADMIN_KEY || 'admin123';
+router.post('/', async (req, res) => {
+    try {
+        // Check if user is admin
+        const isAdmin = req.headers['x-admin-key'] === process.env.ADMIN_KEY || 'admin123';
 
-    if (!isAdmin) {
-        return res.status(403).json({ error: 'Admin access required' });
+        if (!isAdmin) {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+
+        const { title, content, author } = req.body;
+
+        if (!title || !content) {
+            return res.status(400).json({ error: 'Title and content are required' });
+        }
+
+        const newAnnouncement = new Announcement({
+            title,
+            content,
+            author: author || 'Admin',
+            active: true,
+            priority: 0
+        });
+
+        await newAnnouncement.save();
+
+        // Emit to all connected clients via Socket.io
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('announcement_created', newAnnouncement);
+        }
+
+        res.status(201).json(newAnnouncement);
+    } catch (error) {
+        console.error('Error creating announcement:', error);
+        res.status(500).json({ error: 'Failed to create announcement' });
     }
-
-    const { title, content, author } = req.body;
-
-    if (!title || !content) {
-        return res.status(400).json({ error: 'Title and content are required' });
-    }
-
-    const newAnnouncement = {
-        id: nextId++,
-        title,
-        content,
-        author: author || 'Admin',
-        createdAt: new Date(),
-        active: true,
-        priority: 0
-    };
-
-    announcements.unshift(newAnnouncement);
-
-    // Emit to all connected clients via Socket.io
-    const io = req.app.get('io');
-    if (io) {
-        io.emit('announcement_created', newAnnouncement);
-    }
-
-    res.status(201).json(newAnnouncement);
 });
 
 // Update announcement (admin)
-router.put('/:id', (req, res) => {
-    // Check if user is admin
-    const isAdmin = req.headers['x-admin-key'] === process.env.ADMIN_KEY || 'admin123';
+router.put('/:id', async (req, res) => {
+    try {
+        // Check if user is admin
+        const isAdmin = req.headers['x-admin-key'] === process.env.ADMIN_KEY || 'admin123';
 
-    if (!isAdmin) {
-        return res.status(403).json({ error: 'Admin access required' });
+        if (!isAdmin) {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+
+        const { title, content, active, priority } = req.body;
+
+        const updateData = {};
+        if (title !== undefined) updateData.title = title;
+        if (content !== undefined) updateData.content = content;
+        if (active !== undefined) updateData.active = active;
+        if (priority !== undefined) updateData.priority = priority;
+        updateData.updatedAt = new Date();
+
+        const updatedAnnouncement = await Announcement.findByIdAndUpdate(
+            req.params.id,
+            updateData,
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedAnnouncement) {
+            return res.status(404).json({ error: 'Announcement not found' });
+        }
+
+        // Emit update to all connected clients
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('announcement_updated', updatedAnnouncement);
+        }
+
+        res.json(updatedAnnouncement);
+    } catch (error) {
+        console.error('Error updating announcement:', error);
+        res.status(500).json({ error: 'Failed to update announcement' });
     }
-
-    const id = parseInt(req.params.id);
-    const announcementIndex = announcements.findIndex(a => a.id === id);
-
-    if (announcementIndex === -1) {
-        return res.status(404).json({ error: 'Announcement not found' });
-    }
-
-    const { title, content, active, priority } = req.body;
-
-    announcements[announcementIndex] = {
-        ...announcements[announcementIndex],
-        title: title || announcements[announcementIndex].title,
-        content: content || announcements[announcementIndex].content,
-        active: active !== undefined ? active : announcements[announcementIndex].active,
-        priority: priority !== undefined ? priority : announcements[announcementIndex].priority,
-        updatedAt: new Date()
-    };
-
-    // Emit update to all connected clients
-    const io = req.app.get('io');
-    if (io) {
-        io.emit('announcement_updated', announcements[announcementIndex]);
-    }
-
-    res.json(announcements[announcementIndex]);
 });
 
 // Delete announcement (admin)
-router.delete('/:id', (req, res) => {
-    // Check if user is admin
-    const isAdmin = req.headers['x-admin-key'] === process.env.ADMIN_KEY || 'admin123';
+router.delete('/:id', async (req, res) => {
+    try {
+        // Check if user is admin
+        const isAdmin = req.headers['x-admin-key'] === process.env.ADMIN_KEY || 'admin123';
 
-    if (!isAdmin) {
-        return res.status(403).json({ error: 'Admin access required' });
+        if (!isAdmin) {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+
+        const deletedAnnouncement = await Announcement.findByIdAndDelete(req.params.id);
+
+        if (!deletedAnnouncement) {
+            return res.status(404).json({ error: 'Announcement not found' });
+        }
+
+        // Emit deletion to all connected clients
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('announcement_deleted', { id: req.params.id });
+        }
+
+        res.json({ message: 'Announcement deleted', announcement: deletedAnnouncement });
+    } catch (error) {
+        console.error('Error deleting announcement:', error);
+        res.status(500).json({ error: 'Failed to delete announcement' });
     }
-
-    const id = parseInt(req.params.id);
-    const announcementIndex = announcements.findIndex(a => a.id === id);
-
-    if (announcementIndex === -1) {
-        return res.status(404).json({ error: 'Announcement not found' });
-    }
-
-    const deletedAnnouncement = announcements.splice(announcementIndex, 1)[0];
-
-    // Emit deletion to all connected clients
-    const io = req.app.get('io');
-    if (io) {
-        io.emit('announcement_deleted', { id });
-    }
-
-    res.json({ message: 'Announcement deleted', announcement: deletedAnnouncement });
 });
 
 module.exports = router;

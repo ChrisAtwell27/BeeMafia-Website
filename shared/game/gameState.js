@@ -31,6 +31,9 @@ const playerGameMap = new LimitedMap(100);
  * @returns {Object} Game object
  */
 function createGame(gameId, players, organizerId, options = {}) {
+    // Check if there's a Werebee in the game
+    const hasWerebee = players.some(p => p.role === 'WEREBEE');
+
     const game = {
         id: gameId,
         organizerId: organizerId,
@@ -41,6 +44,7 @@ function createGame(gameId, players, organizerId, options = {}) {
         nightResults: [],
         visits: {},
         votes: {},
+        zombeeVotes: {},
         phaseTimer: null,
         warningTimer: null,
         lastActivityTime: Date.now(),
@@ -58,6 +62,8 @@ function createGame(gameId, players, organizerId, options = {}) {
         transports: [],
         beekeeperProtection: null,
         activeSeances: [],
+        hasWerebee: hasWerebee,
+        isFullMoon: false,
         ...options
     };
 
@@ -131,6 +137,7 @@ function clearNightData(game) {
     game.nightActions = {};
     game.visits = {};
     game.nightResults = [];
+    game.zombeeVotes = {};
     game.framedPlayers.clear();
     game.activeSeances = [];
 

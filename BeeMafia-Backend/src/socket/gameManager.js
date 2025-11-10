@@ -6,6 +6,7 @@
 const { createGame: createGameState, getGame, deleteGame, clearNightData, clearVotes } = require('../../../shared/game/gameState');
 const { getRoleDistribution, shuffleArray, initializePlayerRole, checkWinConditions, determineWinners, getTeamCounts, countVotes, getGameConstants } = require('../../../shared/game/gameUtils');
 const { ROLES } = require('../../../shared/roles');
+const { RANDOM_ROLE_POOLS, resolveRandomRole } = require('../../../shared/game/roleCategories');
 const { getPresetDistribution } = require('../../../shared/game/presets');
 const { activePlayers, activeGameRooms, updateLobby } = require('./lobbyManager');
 const { processNightActions } = require('./actionsProcessor');
@@ -25,6 +26,30 @@ function generateRoomCode() {
         return generateRoomCode(); // Recursive call to generate new code
     }
     return code;
+}
+
+// Helper function to get phase duration (custom or default)
+function getPhaseDuration(game, phase) {
+    // If custom durations are provided, use them
+    if (game.customDurations && game.customDurations[phase]) {
+        return game.customDurations[phase] * 1000; // Convert seconds to milliseconds
+    }
+
+    // Otherwise use constants based on debug mode
+    const constants = getGameConstants(game.debugMode);
+
+    switch(phase) {
+        case 'setup':
+            return constants.SETUP_DELAY;
+        case 'night':
+            return constants.NIGHT_DURATION;
+        case 'day':
+            return constants.DAY_DISCUSSION_DURATION;
+        case 'voting':
+            return constants.VOTING_DURATION;
+        default:
+            return 60000; // Default 60 seconds
+    }
 }
 
 // Bot AI Helper Functions with Intelligent Behavior
@@ -176,12 +201,32 @@ function performBotNightActions(game) {
                 }
                 break;
 
+            case 'werewolf':
+                // Werebee only acts on full moon nights
+                if (game.isFullMoon) {
+                    // Target anyone randomly
+                    target = validTargets[Math.floor(Math.random() * validTargets.length)];
+                }
+                break;
+
+            case 'zombee_vote':
+                // Zombees vote on who to infect (target non-zombees)
+                const nonZombees = validTargets.filter(p => ROLES[p.role]?.team !== 'zombee');
+                if (nonZombees.length > 0) {
+                    target = nonZombees[Math.floor(Math.random() * nonZombees.length)];
+                    // Store as zombee vote instead of night action
+                    game.zombeeVotes[bot.id] = target.id;
+                    console.log(`🧟 Bot ${bot.username} (Zombee) voted to infect ${target.username}`);
+                }
+                break;
+
             default:
                 // Default random targeting
                 target = validTargets[Math.floor(Math.random() * validTargets.length)];
         }
 
-        if (target) {
+        // Don't store zombee votes in nightActions (they're stored separately)
+        if (target && roleInfo.actionType !== 'zombee_vote') {
             game.nightActions[bot.id] = {
                 action: roleInfo.actionType,
                 target: target.id
@@ -361,6 +406,245 @@ function generateBotMessage(bot, game, phase) {
     return phaseMessages[Math.floor(Math.random() * phaseMessages.length)];
 }
 
+// Custom Role Configuration Helpers
+// Helper to pick a random role from array, avoiding duplicates (except Worker Bee and Killer Wasp)
+function pickRandomRole(roleArray, usedRoles) {
+    const allowedDuplicates = ['WORKER_BEE', 'KILLER_WASP'];
+
+    // Filter out already used roles unless they're allowed duplicates
+    const availableRoles = roleArray.filter(role =>
+        !usedRoles.includes(role) || allowedDuplicates.includes(role)
+    );
+
+    // If no available roles, fall back to Worker Bee
+    if (availableRoles.length === 0) {
+        return 'WORKER_BEE';
+    }
+
+    return availableRoles[Math.floor(Math.random() * availableRoles.length)];
+}
+
+function getDefaultRoleConfig(playerCount) {
+    // Role categories for smart distribution
+    const beeInvestigative = ['QUEENS_GUARD', 'SCOUT_BEE', 'LOOKOUT_BEE', 'TRACKER_BEE', 'SPY_BEE', 'LIBRARIAN_BEE', 'PSYCHIC_BEE', 'POLLINATOR_BEE'];
+    const beeNeutral = ['WORKER_BEE', 'ESCORT_BEE', 'TRAPPER_BEE', 'TRANSPORTER_BEE', 'MEDIUM_BEE', 'BEEKEEPER', 'RETRIBUTIONIST_BEE'];
+    const beeKilling = ['SOLDIER_BEE', 'GUARD_BEE', 'VETERAN_BEE'];
+
+    const waspKilling = ['KILLER_WASP', 'POISONER_WASP'];
+    const waspInvestigative = ['SPY_WASP', 'MOLE_WASP'];
+    const waspNeutral = ['CONSORT_WASP', 'JANITOR_WASP', 'BLACKMAILER_WASP', 'HYPNOTIST_WASP', 'DECEIVER_WASP', 'SABOTEUR_WASP'];
+
+    const neutrals = ['BUTTERFLY', 'CLOWN_BEETLE', 'BOUNTY_HUNTER'];
+
+    const roles = [];
+
+    // ALWAYS NEEDED: Nurse Bee and Queens Guard
+    if (playerCount >= 1) roles.push('NURSE_BEE');
+    if (playerCount >= 2) roles.push('QUEENS_GUARD');
+
+    // WASPS: Always start with Queen
+    if (playerCount >= 3) roles.push('WASP_QUEEN');
+
+    // Add more bees for 4-5 players
+    if (playerCount >= 4) {
+        roles.push(pickRandomRole(beeInvestigative, roles));
+    }
+    if (playerCount >= 5) {
+        roles.push(pickRandomRole(beeNeutral, roles));
+    }
+
+    // Second wasp ALWAYS a killer
+    if (playerCount >= 6) {
+        roles.push(pickRandomRole(waspKilling, roles));
+    }
+
+    // Add more bees 7-8
+    if (playerCount >= 7) {
+        roles.push(pickRandomRole(beeInvestigative, roles));
+    }
+    if (playerCount >= 8) {
+        roles.push(pickRandomRole(beeKilling, roles));
+    }
+
+    // Add first neutral at 9+ players
+    if (playerCount >= 9) {
+        roles.push(pickRandomRole(neutrals, roles));
+    }
+
+    // Third wasp should be investigative
+    if (playerCount >= 10) {
+        roles.push(pickRandomRole(waspInvestigative, roles));
+    }
+
+    // Continue filling with balanced distribution
+    while (roles.length < playerCount) {
+        const current = roles.length;
+        const waspCount = roles.filter(r => ROLES[r]?.team === 'wasp').length;
+        const beeCount = roles.filter(r => ROLES[r]?.team === 'bee').length;
+        const neutralCount = roles.filter(r => ROLES[r]?.team === 'neutral').length;
+
+        const waspRatio = waspCount / current;
+
+        // Maintain 25-30% wasps
+        if (waspRatio < 0.25) {
+            // Add random wasp
+            const allWasps = [...waspKilling, ...waspInvestigative, ...waspNeutral];
+            roles.push(pickRandomRole(allWasps, roles));
+        } else if (current >= 9 && neutralCount < 2 && Math.random() < 0.15) {
+            // 15% chance for neutral in larger games
+            roles.push(pickRandomRole(neutrals, roles));
+        } else {
+            // Add bee - balanced distribution
+            const rand = Math.random();
+            if (rand < 0.45) {
+                // 45% investigative
+                roles.push(pickRandomRole(beeInvestigative, roles));
+            } else if (rand < 0.75) {
+                // 30% neutral/niche
+                roles.push(pickRandomRole(beeNeutral, roles));
+            } else {
+                // 25% killing
+                roles.push(pickRandomRole(beeKilling, roles));
+            }
+        }
+    }
+
+    return roles;
+}
+
+function autoAddRoles(gameRoom, count) {
+    // Role categories for smart distribution
+    const beeInvestigative = ['QUEENS_GUARD', 'SCOUT_BEE', 'LOOKOUT_BEE', 'TRACKER_BEE', 'SPY_BEE', 'LIBRARIAN_BEE', 'PSYCHIC_BEE', 'POLLINATOR_BEE'];
+    const beeNeutral = ['WORKER_BEE', 'ESCORT_BEE', 'TRAPPER_BEE', 'TRANSPORTER_BEE', 'MEDIUM_BEE', 'BEEKEEPER', 'RETRIBUTIONIST_BEE'];
+    const beeKilling = ['SOLDIER_BEE', 'GUARD_BEE', 'VETERAN_BEE'];
+
+    const waspKilling = ['KILLER_WASP', 'POISONER_WASP'];
+    const waspInvestigative = ['SPY_WASP', 'MOLE_WASP'];
+    const waspNeutral = ['CONSORT_WASP', 'JANITOR_WASP', 'BLACKMAILER_WASP', 'HYPNOTIST_WASP', 'DECEIVER_WASP', 'SABOTEUR_WASP'];
+
+    const neutrals = ['BUTTERFLY', 'CLOWN_BEETLE', 'BOUNTY_HUNTER'];
+
+    const currentCount = gameRoom.customRoles.length;
+    const teamCounts = { bee: 0, wasp: 0, neutral: 0 };
+
+    // Count current team distribution and check for required roles
+    let hasNurse = false;
+    let hasQueensGuard = false;
+    let hasWaspQueen = false;
+    let waspKillerCount = 0;
+    let waspInvestigativeCount = 0;
+
+    gameRoom.customRoles.forEach(roleKey => {
+        const role = ROLES[roleKey];
+        if (role) {
+            teamCounts[role.team]++;
+            if (roleKey === 'NURSE_BEE') hasNurse = true;
+            if (roleKey === 'QUEENS_GUARD') hasQueensGuard = true;
+            if (roleKey === 'WASP_QUEEN') hasWaspQueen = true;
+            if (role.team === 'wasp' && waspKilling.includes(roleKey)) waspKillerCount++;
+            if (role.team === 'wasp' && waspInvestigative.includes(roleKey)) waspInvestigativeCount++;
+        }
+    });
+
+    const roles = [];
+    // Track all used roles (existing + new)
+    const allUsedRoles = [...gameRoom.customRoles];
+
+    for (let i = 0; i < count; i++) {
+        const totalRoles = currentCount + roles.length;
+        const newWaspCount = teamCounts.wasp + roles.filter(r => ROLES[r]?.team === 'wasp').length;
+        const waspRatio = newWaspCount / (totalRoles || 1);
+
+        // Priority 1: Always ensure Nurse Bee
+        if (!hasNurse && roles.filter(r => r === 'NURSE_BEE').length === 0) {
+            roles.push('NURSE_BEE');
+            allUsedRoles.push('NURSE_BEE');
+            hasNurse = true;
+            continue;
+        }
+
+        // Priority 2: Always ensure Queens Guard
+        if (!hasQueensGuard && roles.filter(r => r === 'QUEENS_GUARD').length === 0) {
+            roles.push('QUEENS_GUARD');
+            allUsedRoles.push('QUEENS_GUARD');
+            hasQueensGuard = true;
+            continue;
+        }
+
+        // Priority 3: Ensure Wasp Queen if we have wasps or need them
+        if (!hasWaspQueen && (teamCounts.wasp > 0 || waspRatio < 0.25)) {
+            roles.push('WASP_QUEEN');
+            allUsedRoles.push('WASP_QUEEN');
+            hasWaspQueen = true;
+            teamCounts.wasp++;
+            continue;
+        }
+
+        // Priority 4: Second wasp ALWAYS a killer
+        if (newWaspCount === 1 && waspKillerCount === 0) {
+            const killer = pickRandomRole(waspKilling, allUsedRoles);
+            roles.push(killer);
+            allUsedRoles.push(killer);
+            teamCounts.wasp++;
+            waspKillerCount++;
+            continue;
+        }
+
+        // Priority 5: Third wasp should be investigative
+        if (newWaspCount === 2 && waspInvestigativeCount === 0 && waspRatio < 0.3) {
+            const investigator = pickRandomRole(waspInvestigative, allUsedRoles);
+            roles.push(investigator);
+            allUsedRoles.push(investigator);
+            teamCounts.wasp++;
+            waspInvestigativeCount++;
+            continue;
+        }
+
+        // Normal distribution - maintain 25-30% wasps
+        if (waspRatio < 0.25 && newWaspCount > 0) {
+            // Add random wasp (after priorities are met, truly random)
+            const allWasps = [...waspKilling, ...waspInvestigative, ...waspNeutral];
+            const wasp = pickRandomRole(allWasps, allUsedRoles);
+            roles.push(wasp);
+            allUsedRoles.push(wasp);
+            teamCounts.wasp++;
+        } else if (totalRoles >= 9 && teamCounts.neutral < 2 && Math.random() < 0.15) {
+            // 15% chance for neutral in larger games (9+ players)
+            const neutral = pickRandomRole(neutrals, allUsedRoles);
+            roles.push(neutral);
+            allUsedRoles.push(neutral);
+            teamCounts.neutral++;
+        } else {
+            // Add bee with smart distribution
+            const rand = Math.random();
+            let bee;
+            if (rand < 0.45) {
+                // 45% investigative
+                bee = pickRandomRole(beeInvestigative, allUsedRoles);
+            } else if (rand < 0.75) {
+                // 30% neutral/niche
+                bee = pickRandomRole(beeNeutral, allUsedRoles);
+            } else {
+                // 25% killing
+                bee = pickRandomRole(beeKilling, allUsedRoles);
+            }
+            roles.push(bee);
+            allUsedRoles.push(bee);
+            teamCounts.bee++;
+        }
+    }
+
+    return roles;
+}
+
+function broadcastRoleConfig(io, gameId, gameRoom) {
+    io.to(gameId).emit('role_config_updated', {
+        roles: gameRoom.customRoles,
+        availableRoles: { ROLES }, // Send all available roles
+        randomRolePools: RANDOM_ROLE_POOLS // Send random role options
+    });
+}
+
 function createGame(socket, io, data) {
     const { name, maxPlayers = 20, gameMode = 'basic', debugMode = false, isPrivate = false } = data;
 
@@ -390,7 +674,8 @@ function createGame(socket, io, data) {
         isPrivate: isPrivate || false,
         roomCode,
         status: 'waiting', // waiting, starting, playing, finished
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        customRoles: gameMode === 'custom' ? getDefaultRoleConfig(1) : [] // Initialize with default role for first player
     };
 
     activeGameRooms.set(gameId, gameRoom);
@@ -411,7 +696,7 @@ function createGame(socket, io, data) {
 
     updateLobby(io);
 
-    console.log(`Game created: ${gameId} by ${socket.username}${isPrivate ? ` (Private: ${roomCode})` : ''}`);
+    console.log(`Game created: ${gameId} by ${socket.username}${isPrivate ? ` (Private: ${roomCode})` : ''}${debugMode ? ' [DEBUG]' : ''}`);
 }
 
 function joinGame(socket, io, data) {
@@ -467,6 +752,19 @@ function joinGame(socket, io, data) {
     if (player) {
         player.inGame = true;
         player.gameId = gameRoom.gameId;
+    }
+
+    // Auto-add role for custom mode when player joins
+    if (gameRoom.gameMode === 'custom' && gameRoom.customRoles) {
+        const currentPlayerCount = gameRoom.players.length;
+        const currentRoleCount = gameRoom.customRoles.length;
+
+        if (currentRoleCount < currentPlayerCount) {
+            const rolesToAdd = autoAddRoles(gameRoom, currentPlayerCount - currentRoleCount);
+            gameRoom.customRoles.push(...rolesToAdd);
+            // Broadcast updated role config
+            broadcastRoleConfig(io, gameRoom.gameId, gameRoom);
+        }
     }
 
     socket.join(gameRoom.gameId);
@@ -563,7 +861,7 @@ function toggleReady(socket, io, data) {
 }
 
 function startGame(socket, io, data) {
-    const { gameId, preset } = data;
+    const { gameId, preset, customDurations } = data;
 
     const gameRoom = activeGameRooms.get(gameId);
 
@@ -585,35 +883,37 @@ function startGame(socket, io, data) {
         return socket.emit('error', { message: 'Game already started' });
     }
 
-    // In debug mode, fill remaining slots with bots up to 6 players for better testing
-    if (gameRoom.debugMode && gameRoom.players.length < 6) {
-        const botsNeeded = 6 - gameRoom.players.length;
-        console.log(`🤖 Debug mode: Adding ${botsNeeded} bots to fill game`);
-
-        for (let i = 0; i < botsNeeded; i++) {
-            const botId = `bot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            const botNames = ['BotAlice', 'BotBob', 'BotCharlie', 'BotDiana', 'BotEve', 'BotFrank', 'BotGrace', 'BotHank'];
-            const botName = botNames[i % botNames.length] + `_${i}`;
-
-            gameRoom.players.push({
-                id: botId,
-                username: botName,
-                socketId: null, // Bots don't have socket connections
-                isBot: true
-            });
-        }
-
-        io.to(gameId).emit('player_joined_game', {
-            player: { username: 'System', userId: 'system' },
-            players: gameRoom.players.map(p => ({ username: p.username, userId: p.id }))
-        });
-    }
-
     gameRoom.status = 'starting';
 
     // Get role distribution
     let roleDistribution;
-    if (preset) {
+    if (gameRoom.gameMode === 'custom' && gameRoom.customRoles) {
+        // Use custom role configuration
+        roleDistribution = gameRoom.customRoles;
+
+        // Validate: Must have enough roles for all players
+        if (roleDistribution.length !== gameRoom.players.length) {
+            gameRoom.status = 'waiting';
+            return socket.emit('error', {
+                message: `Role count mismatch! Need exactly ${gameRoom.players.length} roles, have ${roleDistribution.length}`
+            });
+        }
+
+        // Validate: Must have at least one Wasp (including random wasp pools)
+        const hasWasp = roleDistribution.some(roleKey => {
+            // Check regular roles
+            if (ROLES[roleKey]?.team === 'wasp') return true;
+            // Check random role pools
+            if (RANDOM_ROLE_POOLS[roleKey]?.team === 'wasp') return true;
+            return false;
+        });
+        if (!hasWasp) {
+            gameRoom.status = 'waiting';
+            return socket.emit('error', {
+                message: 'Invalid role configuration: Must have at least one Wasp role!'
+            });
+        }
+    } else if (preset) {
         roleDistribution = getPresetDistribution(preset, gameRoom.players.length);
     } else {
         roleDistribution = getRoleDistribution(gameRoom.players.length, false, gameRoom.debugMode);
@@ -623,6 +923,22 @@ function startGame(socket, io, data) {
         gameRoom.status = 'waiting';
         return socket.emit('error', { message: 'Invalid player count or preset' });
     }
+
+    // Resolve random roles to actual roles
+    roleDistribution = roleDistribution.map(roleKey => {
+        // Check if this is a random role pool
+        if (RANDOM_ROLE_POOLS[roleKey]) {
+            const resolvedRole = resolveRandomRole(roleKey);
+            if (resolvedRole) {
+                console.log(`🎲 Resolved ${roleKey} -> ${resolvedRole}`);
+                return resolvedRole;
+            } else {
+                console.warn(`⚠️ Failed to resolve random role: ${roleKey}, keeping original`);
+                return roleKey;
+            }
+        }
+        return roleKey;
+    });
 
     // Shuffle and assign roles
     const shuffledRoles = shuffleArray(roleDistribution);
@@ -648,6 +964,7 @@ function startGame(socket, io, data) {
             gameMode: gameRoom.gameMode,
             debugMode: gameRoom.debugMode,
             instantTransitions: gameRoom.debugMode, // Enable instant transitions in debug mode
+            customDurations: customDurations, // Pass custom phase durations if provided
             startedAt: Date.now()
         }
     );
@@ -662,6 +979,25 @@ function startGame(socket, io, data) {
                 const roleInfo = ROLES[player.role];
                 // Safety check for role existence
                 if (roleInfo) {
+                    // Get team members for team-based roles
+                    let teamMembers = [];
+                    if (roleInfo.team === 'wasp' || roleInfo.team === 'zombee' || roleInfo.id === 'MASON_BEE' || roleInfo.id === 'mason') {
+                        teamMembers = gamePlayers
+                            .filter(p => {
+                                const pRole = ROLES[p.role];
+                                if (!pRole) return false;
+                                // Same team
+                                if (roleInfo.team === 'wasp' && pRole.team === 'wasp') return true;
+                                if (roleInfo.team === 'zombee' && pRole.team === 'zombee') return true;
+                                // Masons
+                                if ((roleInfo.id === 'MASON_BEE' || roleInfo.id === 'mason') &&
+                                    (pRole.id === 'MASON_BEE' || pRole.id === 'mason')) return true;
+                                return false;
+                            })
+                            .filter(p => p.id !== player.id) // Exclude self
+                            .map(p => ({ id: p.id, username: p.username }));
+                    }
+
                     socket.emit('role_assigned', {
                         role: roleInfo.name,
                         roleKey: player.role,
@@ -669,7 +1005,21 @@ function startGame(socket, io, data) {
                         team: roleInfo.team,
                         description: roleInfo.description,
                         abilities: roleInfo.abilities || [],
-                        winCondition: roleInfo.winCondition || 'Win with your team'
+                        winCondition: roleInfo.winCondition || 'Win with your team',
+                        nightAction: roleInfo.nightAction || false,
+                        actionType: roleInfo.actionType,
+                        attack: roleInfo.attack,
+                        defense: roleInfo.defense,
+                        bullets: roleInfo.bullets,
+                        vests: roleInfo.vests,
+                        alerts: roleInfo.alerts,
+                        selfHealsLeft: roleInfo.selfHealsLeft,
+                        executions: roleInfo.executions,
+                        cleans: roleInfo.cleans,
+                        disguises: roleInfo.disguises,
+                        mimics: roleInfo.mimics,
+                        silences: roleInfo.silences,
+                        teamMembers: teamMembers
                     });
                 } else {
                     console.error(`⚠️ Cannot send role assignment - role ${player.role} not found`);
@@ -687,7 +1037,7 @@ function startGame(socket, io, data) {
     // Transition to night after setup delay
     setTimeout(() => {
         startNightPhase(io, gameId);
-    }, constants.SETUP_DELAY);
+    }, getPhaseDuration(game, 'setup'));
 
     console.log(`Game started: ${gameId} with ${gamePlayers.length} players`);
 }
@@ -702,17 +1052,33 @@ function startNightPhase(io, gameId) {
     game.nightNumber++;
     clearNightData(game);
 
+    // Update full moon status (every other night when Werebee is in game)
+    if (game.hasWerebee) {
+        game.isFullMoon = (game.nightNumber % 2 === 1);
+    }
+
+    const alivePlayers = game.players.filter(p => p.alive);
+
     io.to(gameId).emit('phase_changed', {
         phase: 'night',
         nightNumber: game.nightNumber,
-        duration: constants.NIGHT_DURATION / 1000
+        players: game.players.map(p => ({ id: p.id, username: p.username, alive: p.alive !== false, isBot: p.isBot })),
+        alivePlayers: alivePlayers.map(p => ({ id: p.id, username: p.username })),
+        duration: getPhaseDuration(game, 'night') / 1000,
+        isFullMoon: game.isFullMoon || false
     });
 
     // Prompt players for night actions
     game.players.forEach(player => {
         if (player.alive && !player.isBot) {
             const roleInfo = ROLES[player.role];
+
+            // Werebee only acts on full moon nights
             if (roleInfo.nightAction) {
+                if (player.role === 'WEREBEE' && !game.isFullMoon) {
+                    return; // Werebee cannot act on non-full moon nights
+                }
+
                 const socket = io.sockets.sockets.get(player.socketId);
                 if (socket) {
                     socket.emit('request_night_action', {
@@ -750,8 +1116,10 @@ function startNightPhase(io, gameId) {
     }, botActionDelay);
 
     // Auto-advance after night duration
-    // In debug mode with instant transitions, phase is much shorter
-    const nightDuration = game.debugMode && game.instantTransitions ? 5000 : constants.NIGHT_DURATION;
+    // In debug mode with instant transitions, phase is much shorter (unless custom durations are set)
+    const nightDuration = game.customDurations && game.customDurations.night
+        ? getPhaseDuration(game, 'night')
+        : (game.debugMode && game.instantTransitions ? 5000 : getPhaseDuration(game, 'night'));
     setTimeout(() => {
         processNight(io, gameId);
     }, nightDuration);
@@ -786,6 +1154,48 @@ function processNight(io, gameId) {
         });
     }
 
+    // Send night event notifications to affected players
+    if (results.playerEvents) {
+        results.playerEvents.forEach((events, playerId) => {
+            const player = game.players.find(p => p.id === playerId);
+            if (player && player.socketId) {
+                const socket = io.sockets.sockets.get(player.socketId);
+                if (socket) {
+                    // Send each event to the player
+                    events.forEach(event => {
+                        socket.emit('night_event', event);
+                    });
+                }
+            }
+        });
+    }
+
+    // Handle zombee conversions - send new role info to converted players
+    if (results.conversions && results.conversions.length > 0) {
+        results.conversions.forEach(conversion => {
+            const player = game.players.find(p => p.id === conversion.playerId);
+            if (player && player.socketId) {
+                const socket = io.sockets.sockets.get(player.socketId);
+                if (socket && !player.isBot) {
+                    const roleInfo = ROLES[conversion.newRole];
+                    socket.emit('role_changed', {
+                        role: roleInfo.name,
+                        roleKey: conversion.newRole,
+                        emoji: roleInfo.emoji,
+                        team: roleInfo.team,
+                        description: roleInfo.description,
+                        abilities: roleInfo.abilities || [],
+                        winCondition: roleInfo.winCondition || 'Win with your team',
+                        nightAction: roleInfo.nightAction || false,
+                        actionType: roleInfo.actionType,
+                        attack: roleInfo.attack,
+                        defense: roleInfo.defense
+                    });
+                }
+            }
+        });
+    }
+
     // Check win conditions
     const winCondition = checkWinConditions(game);
     if (winCondition) {
@@ -809,13 +1219,16 @@ function startDayPhase(io, gameId) {
 
     io.to(gameId).emit('phase_changed', {
         phase: 'day',
+        players: game.players.map(p => ({ id: p.id, username: p.username, alive: p.alive !== false, isBot: p.isBot })),
         alivePlayers: alivePlayers.map(p => ({ id: p.id, username: p.username })),
-        duration: constants.DAY_DISCUSSION_DURATION / 1000
+        duration: getPhaseDuration(game, 'day') / 1000
     });
 
     // Auto-advance to voting after day duration
-    // In debug mode with instant transitions, discussion is much shorter
-    const discussionDuration = game.debugMode && game.instantTransitions ? 10000 : constants.DAY_DISCUSSION_DURATION;
+    // In debug mode with instant transitions, discussion is much shorter (unless custom durations are set)
+    const discussionDuration = game.customDurations && game.customDurations.day
+        ? getPhaseDuration(game, 'day')
+        : (game.debugMode && game.instantTransitions ? 10000 : getPhaseDuration(game, 'day'));
 
     // Send bot messages during day phase
     if (game.debugMode) {
@@ -853,8 +1266,9 @@ function startVotingPhase(io, gameId) {
 
     io.to(gameId).emit('phase_changed', {
         phase: 'voting',
+        players: game.players.map(p => ({ id: p.id, username: p.username, alive: p.alive !== false, isBot: p.isBot })),
         votingTargets: alivePlayers.map(p => ({ id: p.id, username: p.username })),
-        duration: constants.VOTING_DURATION / 1000
+        duration: getPhaseDuration(game, 'voting') / 1000
     });
 
     // Bots vote after a short delay (simulate thinking)
@@ -879,8 +1293,10 @@ function startVotingPhase(io, gameId) {
         }
     }, botVoteDelay);
 
-    // Auto-process votes after voting duration
-    const votingDuration = game.debugMode && game.instantTransitions ? 8000 : constants.VOTING_DURATION;
+    // Auto-process votes after voting duration (unless custom durations are set)
+    const votingDuration = game.customDurations && game.customDurations.voting
+        ? getPhaseDuration(game, 'voting')
+        : (game.debugMode && game.instantTransitions ? 8000 : getPhaseDuration(game, 'voting'));
     setTimeout(() => {
         processVotes(io, gameId);
     }, votingDuration);
@@ -957,8 +1373,11 @@ async function endGame(io, gameId, winCondition) {
 
         await gameRecord.save();
 
-        // Update user stats
+        // Update user stats (only for real users, not bots or temporary users)
         for (const player of game.players) {
+            // Skip if not a valid MongoDB ObjectId (bot or temporary user)
+            if (!player.id.match(/^[0-9a-fA-F]{24}$/)) continue;
+
             const user = await User.findById(player.id);
             if (user) {
                 user.stats.gamesPlayed++;
@@ -990,22 +1409,9 @@ async function endGame(io, gameId, winCondition) {
         }))
     });
 
-    // Clean up after 30 seconds
-    setTimeout(() => {
-        deleteGame(gameId);
-        activeGameRooms.delete(gameId);
-
-        gameRoom.players.forEach(p => {
-            const player = activePlayers.get(p.id);
-            if (player) {
-                player.inGame = false;
-                delete player.gameId;
-            }
-        });
-
-        updateLobby(io);
-        console.log(`Game ended and cleaned up: ${gameId}`);
-    }, 30000);
+    // Game stays in finished state until host returns to lobby
+    // No auto-cleanup - wait for host action
+    console.log(`Game ${gameId} ended. Waiting for host to return to lobby...`);
 }
 
 function submitNightAction(socket, io, data) {
@@ -1022,6 +1428,25 @@ function submitNightAction(socket, io, data) {
     const gamePlayer = game.players.find(p => p.id === socket.userId);
     if (!gamePlayer || !gamePlayer.alive) {
         return socket.emit('error', { message: 'Cannot submit action' });
+    }
+
+    // Handle zombee votes separately (similar to wasp kill voting)
+    if (data.action === 'zombee_vote') {
+        game.zombeeVotes[socket.userId] = data.target;
+
+        // Notify all zombees of the vote
+        const zombees = game.players.filter(p => p.alive && ROLES[p.role]?.team === 'zombee');
+        zombees.forEach(zombee => {
+            const zombeeSocket = io.sockets.sockets.get(zombee.socketId);
+            if (zombeeSocket && !zombee.isBot) {
+                zombeeSocket.emit('zombee_vote_update', {
+                    votes: game.zombeeVotes,
+                    totalZombees: zombees.length
+                });
+            }
+        });
+
+        return socket.emit('action_submitted', { message: 'Vote submitted' });
     }
 
     game.nightActions[socket.userId] = {
@@ -1051,12 +1476,31 @@ function submitVote(socket, io, data) {
 
     game.votes[socket.userId] = data.target;
 
+    // Get target name
+    let targetName = 'skip';
+    if (data.target !== 'skip') {
+        const targetPlayer = game.players.find(p => p.id === data.target);
+        targetName = targetPlayer ? targetPlayer.username : 'unknown';
+    }
+
     io.to(player.gameId).emit('vote_cast', {
         voter: socket.username,
+        target: targetName,
         votesRemaining: game.players.filter(p => p.alive).length - Object.keys(game.votes).length
     });
 }
 
+/**
+ * Unified Chat Handler
+ * Handles all chat messages with channel-based visibility
+ *
+ * Channels:
+ * - "all": Living players can see (day/voting phase)
+ * - "wasp": Only wasps can see (anytime, especially night)
+ * - "dead": Only dead players can see
+ * - "jailor": Jailor and their prisoner can see
+ * - "mason": Only masons can see
+ */
 function handleChatMessage(socket, io, data) {
     const player = activePlayers.get(socket.userId);
     if (!player || !player.gameId) {
@@ -1069,72 +1513,123 @@ function handleChatMessage(socket, io, data) {
     const gamePlayer = game.players.find(p => p.id === socket.userId);
     if (!gamePlayer) return;
 
-    // Only living players can chat during day
-    if (game.phase === 'day' && gamePlayer.alive) {
-        io.to(player.gameId).emit('chat_message', {
-            username: socket.username,
-            message: data.message,
-            timestamp: Date.now()
-        });
+    const { message, channel = 'all' } = data;
+    const role = ROLES[gamePlayer.role];
+
+    // Determine if player can send messages
+    // Living players can chat during day/voting
+    // Special roles can chat during night (wasps, zombees, masons, jailor)
+    // Dead players can always chat
+    let canSend = false;
+    let visibilityTag = null;
+
+    if (!gamePlayer.alive) {
+        canSend = true;
+        visibilityTag = 'dead';
+    } else if (game.phase === 'day' || game.phase === 'voting') {
+        canSend = true;
+        visibilityTag = null; // Everyone can see
+    } else if (game.phase === 'night') {
+        // Check if player has night chat privileges
+        if (role && role.team === 'wasp') {
+            canSend = true;
+            visibilityTag = 'wasp';
+        } else if (role && role.team === 'zombee') {
+            canSend = true;
+            visibilityTag = 'zombee';
+        } else if (role && (role.id === 'MASON_BEE' || role.id === 'mason')) {
+            canSend = true;
+            visibilityTag = 'mason';
+        } else if (role && role.id === 'jailor') {
+            canSend = true;
+            visibilityTag = 'jailor';
+        }
+    }
+
+    // Check if mason can always chat
+    if (role && (role.id === 'MASON_BEE' || role.id === 'mason')) {
+        canSend = true;
+        visibilityTag = 'mason';
+    }
+
+    // Check if jailor can always chat
+    if (role && role.id === 'jailor') {
+        canSend = true;
+        visibilityTag = 'jailor';
+    }
+
+    if (!canSend) {
+        return socket.emit('error', { message: 'You cannot send messages at this time' });
+    }
+
+    // Create the chat message
+    const chatMessage = {
+        username: socket.username,
+        userId: socket.userId,
+        message: message,
+        channel: 'all', // Everything goes to all channel
+        timestamp: Date.now(),
+        isDead: !gamePlayer.alive, // Tag if message is from a dead player
+        visibilityTag: visibilityTag // Tag for special visibility (wasp, zombee, mason, jailor)
+    };
+
+    // Send to all players in the game
+    // Frontend will filter based on what each player can see
+    io.to(player.gameId).emit('chat_message', chatMessage);
+}
+
+/**
+ * Check if a player can send to a specific channel
+ */
+function canSendToChannel(gamePlayer, game, channel) {
+    const role = ROLES[gamePlayer.role];
+
+    switch (channel) {
+        case 'all':
+            // Living players can chat during day/voting
+            // Dead players can always chat (but only dead players will see their messages)
+            if (gamePlayer.alive) {
+                return game.phase === 'day' || game.phase === 'voting';
+            } else {
+                return true; // Dead players can always chat in "all" channel
+            }
+
+        case 'wasp':
+            // Only wasps can use wasp chat
+            return role && role.team === 'wasp';
+
+        case 'zombee':
+            // Only zombees can use zombee chat
+            return role && role.team === 'zombee';
+
+        case 'dead':
+            // Only dead players can use dead chat
+            return !gamePlayer.alive;
+
+        case 'jailor':
+            // Jailor or jailed prisoner can use jailor chat
+            if (role && role.id === 'jailor') return true;
+            // Check if this player is jailed
+            const jailor = game.players.find(p => ROLES[p.role]?.id === 'jailor');
+            if (jailor && jailor.jailedPlayer === gamePlayer.id) return true;
+            return false;
+
+        case 'mason':
+            // Only masons can use mason chat
+            return role && role.id === 'mason';
+
+        default:
+            return false;
     }
 }
 
+// Keep old handlers for backward compatibility, but redirect to unified handler
 function handleWaspChat(socket, io, data) {
-    const player = activePlayers.get(socket.userId);
-    if (!player || !player.gameId) {
-        return;
-    }
-
-    const game = getGame(player.gameId);
-    if (!game) return;
-
-    const gamePlayer = game.players.find(p => p.id === socket.userId);
-    if (!gamePlayer || ROLES[gamePlayer.role].team !== 'wasp') {
-        return;
-    }
-
-    // Send to all wasps
-    game.players.forEach(p => {
-        if (ROLES[p.role].team === 'wasp') {
-            const s = io.sockets.sockets.get(p.socketId);
-            if (s) {
-                s.emit('wasp_chat', {
-                    username: socket.username,
-                    message: data.message,
-                    timestamp: Date.now()
-                });
-            }
-        }
-    });
+    handleChatMessage(socket, io, { message: data.message, channel: 'wasp' });
 }
 
 function handleDeadChat(socket, io, data) {
-    const player = activePlayers.get(socket.userId);
-    if (!player || !player.gameId) {
-        return;
-    }
-
-    const game = getGame(player.gameId);
-    if (!game) return;
-
-    const gamePlayer = game.players.find(p => p.id === socket.userId);
-    if (!gamePlayer || gamePlayer.alive) {
-        return;
-    }
-
-    // Send to all dead players
-    game.players.forEach(p => {
-        if (!p.alive) {
-            const s = io.sockets.sockets.get(p.socketId);
-            if (s) {
-                s.emit('dead_chat', {
-                    username: socket.username,
-                    message: data.message,
-                    timestamp: Date.now()
-                });
-            }
-        }
-    });
+    handleChatMessage(socket, io, { message: data.message, channel: 'dead' });
 }
 
 function handleDisconnect(socket, io) {
@@ -1144,16 +1639,259 @@ function handleDisconnect(socket, io) {
     }
 }
 
+function addBots(socket, io, data) {
+    const { gameId, count = 11 } = data;
+    const gameRoom = activeGameRooms.get(gameId);
+
+    if (!gameRoom) {
+        return socket.emit('error', { message: 'Game not found' });
+    }
+
+    // Only host can add bots
+    if (gameRoom.hostId !== socket.userId) {
+        return socket.emit('error', { message: 'Only the host can add bots' });
+    }
+
+    // Only in debug mode
+    if (!gameRoom.debugMode) {
+        return socket.emit('error', { message: 'Bots can only be added in debug mode' });
+    }
+
+    // Check if game already started
+    if (gameRoom.status !== 'waiting') {
+        return socket.emit('error', { message: 'Cannot add bots after game has started' });
+    }
+
+    // Calculate how many bots we can add (don't exceed maxPlayers)
+    const currentPlayers = gameRoom.players.length;
+    const availableSlots = gameRoom.maxPlayers - currentPlayers;
+    const botsToAdd = Math.min(count, availableSlots);
+
+    if (botsToAdd <= 0) {
+        return socket.emit('error', { message: 'No available slots for bots' });
+    }
+
+    const existingBotCount = gameRoom.players.filter(p => p.isBot).length;
+    const botNames = ['BotAlice', 'BotBob', 'BotCharlie', 'BotDiana', 'BotEve', 'BotFrank', 'BotGrace', 'BotHank', 'BotIvy', 'BotJack', 'BotKate', 'BotLeo'];
+
+    console.log(`🤖 Adding ${botsToAdd} bots to game ${gameId}`);
+
+    for (let i = 0; i < botsToAdd; i++) {
+        const botId = `bot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const botName = botNames[(existingBotCount + i) % botNames.length] + `_${existingBotCount + i}`;
+
+        gameRoom.players.push({
+            id: botId,
+            username: botName,
+            socketId: null, // Bots don't have socket connections
+            isBot: true
+        });
+    }
+
+    // Notify all players in the game
+    io.to(gameId).emit('player_joined_game', {
+        player: { username: 'System', userId: 'system' },
+        players: gameRoom.players.map(p => ({ username: p.username, userId: p.id, isBot: p.isBot }))
+    });
+
+    updateLobby(io);
+
+    socket.emit('bots_added', { count: botsToAdd, totalPlayers: gameRoom.players.length });
+}
+
+// Role Configuration Handlers
+function getRoleConfig(socket, io, data) {
+    const { gameId } = data;
+    const gameRoom = activeGameRooms.get(gameId);
+
+    if (!gameRoom) {
+        return socket.emit('error', { message: 'Game not found' });
+    }
+
+    // Send current role configuration
+    socket.emit('role_config_updated', {
+        roles: gameRoom.customRoles || [],
+        availableRoles: { ROLES },
+        randomRolePools: RANDOM_ROLE_POOLS
+    });
+}
+
+function addRoleToConfig(socket, io, data) {
+    const { gameId, roleKey } = data;
+    const gameRoom = activeGameRooms.get(gameId);
+
+    if (!gameRoom) {
+        return socket.emit('error', { message: 'Game not found' });
+    }
+
+    if (gameRoom.hostId !== socket.userId) {
+        return socket.emit('error', { message: 'Only the host can modify roles' });
+    }
+
+    if (gameRoom.status !== 'waiting') {
+        return socket.emit('error', { message: 'Cannot modify roles after game has started' });
+    }
+
+    // Validate role exists (either regular role or random pool)
+    if (!ROLES[roleKey] && !RANDOM_ROLE_POOLS[roleKey]) {
+        return socket.emit('error', { message: 'Invalid role' });
+    }
+
+    if (!gameRoom.customRoles) {
+        gameRoom.customRoles = [];
+    }
+
+    gameRoom.customRoles.push(roleKey);
+    broadcastRoleConfig(io, gameId, gameRoom);
+
+    console.log(`🎭 ${socket.username} added role ${roleKey} to game ${gameId}`);
+}
+
+function removeRoleFromConfig(socket, io, data) {
+    const { gameId, index } = data;
+    const gameRoom = activeGameRooms.get(gameId);
+
+    if (!gameRoom) {
+        return socket.emit('error', { message: 'Game not found' });
+    }
+
+    if (gameRoom.hostId !== socket.userId) {
+        return socket.emit('error', { message: 'Only the host can modify roles' });
+    }
+
+    if (gameRoom.status !== 'waiting') {
+        return socket.emit('error', { message: 'Cannot modify roles after game has started' });
+    }
+
+    if (!gameRoom.customRoles || index < 0 || index >= gameRoom.customRoles.length) {
+        return socket.emit('error', { message: 'Invalid role index' });
+    }
+
+    const removedRole = gameRoom.customRoles.splice(index, 1)[0];
+    broadcastRoleConfig(io, gameId, gameRoom);
+
+    console.log(`🎭 ${socket.username} removed role ${removedRole} from game ${gameId}`);
+}
+
+function replaceRoleInConfig(socket, io, data) {
+    const { gameId, index, roleKey } = data;
+    const gameRoom = activeGameRooms.get(gameId);
+
+    if (!gameRoom) {
+        return socket.emit('error', { message: 'Game not found' });
+    }
+
+    if (gameRoom.hostId !== socket.userId) {
+        return socket.emit('error', { message: 'Only the host can modify roles' });
+    }
+
+    if (gameRoom.status !== 'waiting') {
+        return socket.emit('error', { message: 'Cannot modify roles after game has started' });
+    }
+
+    // Validate role exists (either regular role or random pool)
+    if (!ROLES[roleKey] && !RANDOM_ROLE_POOLS[roleKey]) {
+        return socket.emit('error', { message: 'Invalid role' });
+    }
+
+    if (!gameRoom.customRoles || index < 0 || index >= gameRoom.customRoles.length) {
+        return socket.emit('error', { message: 'Invalid role index' });
+    }
+
+    const oldRole = gameRoom.customRoles[index];
+    gameRoom.customRoles[index] = roleKey;
+    broadcastRoleConfig(io, gameId, gameRoom);
+
+    console.log(`🎭 ${socket.username} replaced role ${oldRole} with ${roleKey} in game ${gameId}`);
+}
+
+function autoAddRolesToConfig(socket, io, data) {
+    const { gameId, count } = data;
+    const gameRoom = activeGameRooms.get(gameId);
+
+    if (!gameRoom) {
+        return socket.emit('error', { message: 'Game not found' });
+    }
+
+    if (gameRoom.hostId !== socket.userId) {
+        return socket.emit('error', { message: 'Only the host can modify roles' });
+    }
+
+    if (gameRoom.status !== 'waiting') {
+        return socket.emit('error', { message: 'Cannot modify roles after game has started' });
+    }
+
+    if (!gameRoom.customRoles) {
+        gameRoom.customRoles = [];
+    }
+
+    const rolesToAdd = autoAddRoles(gameRoom, count);
+    gameRoom.customRoles.push(...rolesToAdd);
+    broadcastRoleConfig(io, gameId, gameRoom);
+
+    console.log(`🎭 ${socket.username} auto-added ${count} roles to game ${gameId}`);
+}
+
+function returnToLobby(socket, io, data) {
+    const { gameId } = data;
+    const gameRoom = activeGameRooms.get(gameId);
+
+    if (!gameRoom) {
+        return socket.emit('error', { message: 'Game not found' });
+    }
+
+    // Only host can return everyone to lobby
+    if (gameRoom.hostId !== socket.userId) {
+        return socket.emit('error', { message: 'Only the host can return to lobby' });
+    }
+
+    // Game must be in finished state
+    if (gameRoom.status !== 'finished') {
+        return socket.emit('error', { message: 'Game is not finished' });
+    }
+
+    console.log(`🔄 Host ${socket.username} returning game ${gameId} to lobby`);
+
+    // Delete the finished game state
+    deleteGame(gameId);
+
+    // Reset game room to waiting status, PRESERVING customRoles
+    gameRoom.status = 'waiting';
+    gameRoom.players.forEach(p => {
+        p.ready = false;
+    });
+
+    // Emit to all players that they're back in lobby
+    io.to(gameId).emit('returned_to_lobby', {
+        gameId,
+        players: gameRoom.players,
+        customRoles: gameRoom.customRoles || []
+    });
+
+    // Update global lobby
+    updateLobby(io);
+
+    console.log(`✅ Game ${gameId} returned to lobby with ${gameRoom.customRoles?.length || 0} roles preserved`);
+}
+
 module.exports = {
     createGame,
     joinGame,
     leaveGame,
     toggleReady,
     startGame,
+    addBots,
     submitNightAction,
     submitVote,
     handleChatMessage,
     handleWaspChat,
     handleDeadChat,
-    handleDisconnect
+    handleDisconnect,
+    returnToLobby,
+    // Role configuration handlers
+    getRoleConfig,
+    addRoleToConfig,
+    removeRoleFromConfig,
+    replaceRoleInConfig,
+    autoAddRolesToConfig
 };

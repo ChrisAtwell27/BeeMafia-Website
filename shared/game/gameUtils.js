@@ -115,6 +115,7 @@ function getTeamCounts(game) {
     const alive = game.players.filter(p => p.alive);
     const wasps = alive.filter(p => getPlayerTeam(p) === 'wasp').length;
     const bees = alive.filter(p => getPlayerTeam(p) === 'bee').length;
+    const zombees = alive.filter(p => getPlayerTeam(p) === 'zombee').length;
     const neutralKilling = alive.filter(p => getPlayerTeam(p) === 'neutral' && ROLES[p.role].subteam === 'killing').length;
     const neutralEvil = alive.filter(p => getPlayerTeam(p) === 'neutral' && ROLES[p.role].subteam === 'evil').length;
     const neutralBenign = alive.filter(p => getPlayerTeam(p) === 'neutral' && ROLES[p.role].subteam === 'benign').length;
@@ -122,6 +123,7 @@ function getTeamCounts(game) {
     return {
         wasps,
         bees,
+        zombees,
         neutralKilling,
         neutralEvil,
         neutralBenign,
@@ -155,6 +157,8 @@ function determineWinners(game, winnerType, specificWinner = null) {
         if (winnerType === 'bees' && team === 'bee') {
             winners.push(player);
         } else if (winnerType === 'wasps' && team === 'wasp') {
+            winners.push(player);
+        } else if (winnerType === 'zombees' && team === 'zombee') {
             winners.push(player);
         } else if (winnerType === 'neutral_killer' && player.id === specificWinner?.id) {
             winners.push(player);
@@ -215,18 +219,26 @@ function determineWinners(game, winnerType, specificWinner = null) {
  * Check win conditions
  */
 function checkWinConditions(game) {
-    const { wasps, bees, neutralKilling, neutralEvil, total } = getTeamCounts(game);
+    const { wasps, bees, zombees, neutralKilling, neutralEvil, total } = getTeamCounts(game);
 
-    if (total === 1 && neutralKilling === 1) {
+    // Zombees win if they achieve majority or all players are zombees
+    if (zombees > 0 && zombees >= (wasps + bees + neutralKilling + neutralEvil)) {
+        return { type: 'zombees' };
+    }
+
+    // Single neutral killer wins (but not if zombees present)
+    if (total === 1 && neutralKilling === 1 && zombees === 0) {
         const winner = game.players.find(p => p.alive && ROLES[p.role].subteam === 'killing');
         return { type: 'neutral_killer', winner };
     }
 
-    if (wasps > 0 && wasps >= (bees + neutralKilling + neutralEvil)) {
+    // Wasps win if they achieve parity (but not if zombees present)
+    if (wasps > 0 && zombees === 0 && wasps >= (bees + neutralKilling + neutralEvil)) {
         return { type: 'wasps' };
     }
 
-    if (wasps === 0 && neutralKilling === 0) {
+    // Bees win if wasps, zombees, and neutral killing are all eliminated
+    if (wasps === 0 && zombees === 0 && neutralKilling === 0) {
         return { type: 'bees' };
     }
 

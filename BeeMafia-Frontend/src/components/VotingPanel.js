@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import './VotingPanel.css';
 
-function VotingPanel({ targets, gameId, socket }) {
+function VotingPanel({ targets, gameId, socket, isModal = false, onVoteSubmit }) {
   const [selectedVote, setSelectedVote] = useState('');
   const [voted, setVoted] = useState(false);
 
@@ -11,12 +11,17 @@ function VotingPanel({ targets, gameId, socket }) {
     setSelectedVote(targetId);
     setVoted(true);
     toast.success('Vote submitted!');
+
+    // Call callback if provided (for modal)
+    if (onVoteSubmit) {
+      onVoteSubmit();
+    }
   };
 
-  return (
-    <div className="voting-panel">
+  const content = (
+    <>
       <h3>⚖️ Voting Phase</h3>
-      <p>Vote to eliminate someone or skip</p>
+      <p className="voting-description">Vote to eliminate someone or skip</p>
 
       <div className="voting-options">
         {targets?.map((target) => (
@@ -39,6 +44,22 @@ function VotingPanel({ targets, gameId, socket }) {
       </div>
 
       {voted && <p className="voted-message">✓ Your vote has been recorded</p>}
+    </>
+  );
+
+  if (isModal) {
+    return (
+      <div className="voting-modal-overlay">
+        <div className="voting-modal">
+          {content}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="voting-panel">
+      {content}
     </div>
   );
 }

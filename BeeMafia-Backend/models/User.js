@@ -46,6 +46,46 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    customRoles: [{
+        id: {
+            type: String,
+            required: true
+        },
+        name: {
+            type: String,
+            required: true
+        },
+        emoji: {
+            type: String,
+            required: true
+        },
+        team: {
+            type: String,
+            enum: ['bee', 'wasp', 'neutral'],
+            required: true
+        },
+        subteam: {
+            type: String,
+            enum: ['killing', 'evil', 'benign', 'chaos'],
+            default: null
+        },
+        description: {
+            type: String,
+            required: true
+        },
+        winCondition: {
+            type: String,
+            required: true
+        },
+        abilities: [{
+            id: String,
+            config: mongoose.Schema.Types.Mixed
+        }],
+        createdAt: {
+            type: Date,
+            default: Date.now
+        }
+    }],
     createdAt: {
         type: Date,
         default: Date.now
@@ -84,7 +124,8 @@ userSchema.methods.getPublicProfile = function() {
         displayName: this.displayName,
         avatar: this.avatar,
         stats: this.stats,
-        currency: this.currency
+        currency: this.currency,
+        customRoles: this.customRoles || []
     };
 };
 

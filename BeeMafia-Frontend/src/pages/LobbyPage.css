@@ -92,6 +92,24 @@
   transform: scale(1.1);
 }
 
+.btn-create-roles {
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.2rem;
+  color: #1a0033;
+  font-weight: bold;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
+.btn-create-roles:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
+}
+
 /* Main Content Grid */
 .lobby-content {
   display: grid;
@@ -99,6 +117,79 @@
   gap: 2rem;
   position: relative;
   z-index: 1;
+}
+
+/* Discord Lobby Section */
+.discord-lobby-section {
+  margin-top: 2rem;
+  position: relative;
+  z-index: 1;
+}
+
+.discord-lobby-card {
+  background: linear-gradient(135deg, rgba(88, 101, 242, 0.15) 0%, rgba(88, 101, 242, 0.05) 100%);
+  border: 2px solid rgba(88, 101, 242, 0.4);
+  border-radius: 12px;
+  padding: 1.5rem 2rem;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 2rem;
+}
+
+.discord-lobby-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(88, 101, 242, 0.6);
+  box-shadow: 0 8px 25px rgba(88, 101, 242, 0.3);
+}
+
+.discord-lobby-card .discord-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: float 3s ease-in-out infinite;
+}
+
+.discord-lobby-card h3 {
+  display: none;
+}
+
+.discord-lobby-card p {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.05rem;
+  margin: 0;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.discord-lobby-card p strong {
+  color: #5865F2;
+  font-weight: 700;
+}
+
+.btn-discord-lobby {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: #5865F2;
+  color: white;
+  text-decoration: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1rem;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(88, 101, 242, 0.4);
+  white-space: nowrap;
+}
+
+.btn-discord-lobby:hover {
+  background: #4752C4;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(88, 101, 242, 0.6);
 }
 
 /* News Section */
@@ -649,6 +740,28 @@
 
   .lobby-header h1 {
     font-size: 1.5rem;
+  }
+
+  .discord-lobby-card {
+    grid-template-columns: 1fr;
+    text-align: center;
+    gap: 1rem;
+    padding: 1.25rem;
+  }
+
+  .discord-lobby-card h3 {
+    font-size: 1.15rem;
+  }
+
+  .discord-lobby-card p {
+    font-size: 0.9rem;
+    text-align: center;
+  }
+
+  .btn-discord-lobby {
+    padding: 0.7rem 1.2rem;
+    font-size: 0.95rem;
+    justify-self: center;
   }
 
   .search-container {

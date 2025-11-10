@@ -54,20 +54,10 @@ function PhaseIndicator({ phase, myRole, timer, nightNumber }) {
   const phaseInfo = getPhaseInfo();
 
   return (
-    <div className="phase-indicator" style={{ borderColor: phaseInfo.color }}>
-      <div className="phase-header">
-        <span className="phase-icon">{phaseInfo.icon}</span>
-        <h2 className="phase-title" style={{ color: phaseInfo.color }}>{phaseInfo.title}</h2>
-        {timer && <span className="phase-timer">{timer}s</span>}
-      </div>
-      <p className="phase-description">{phaseInfo.description}</p>
-
-      {myRole && phase !== 'waiting' && (
-        <div className="your-role-reminder">
-          <span className="role-icon">{myRole.emoji}</span>
-          <span className="role-name">You are a {myRole.role}</span>
-        </div>
-      )}
+    <div className="phase-indicator">
+      <span className="phase-icon">{phaseInfo.icon}</span>
+      <span className="phase-title" style={{ color: phaseInfo.color }}>{phaseInfo.title}</span>
+      {timer && <span className="phase-timer">{timer}s</span>}
     </div>
   );
 }

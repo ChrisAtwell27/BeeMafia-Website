@@ -5,6 +5,7 @@
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
   border: 2px solid #0ea5e9;
   animation: fadeIn 0.3s ease-out;
+  flex-shrink: 0;
 }
 
 @keyframes fadeIn {
@@ -164,4 +165,70 @@
   color: #86efac;
   font-size: 0.9rem;
   text-align: center;
+}
+
+/* Multi-Ability Support */
+.ability-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid rgba(14, 165, 233, 0.2);
+  padding-bottom: 0.5rem;
+}
+
+.ability-tab {
+  padding: 0.75rem 1.25rem;
+  background: rgba(15, 23, 42, 0.8);
+  border: 2px solid #334155;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  color: #94a3b8;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.ability-tab:hover:not(:disabled) {
+  border-color: #0ea5e9;
+  background: rgba(30, 41, 59, 0.9);
+  color: #e2e8f0;
+}
+
+.ability-tab.active {
+  border-color: #0ea5e9;
+  background: rgba(14, 165, 233, 0.15);
+  color: #0ea5e9;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+}
+
+.ability-tab.submitted {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: #22c55e;
+  color: #86efac;
+  cursor: not-allowed;
+}
+
+.ability-tab:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .ability-tabs {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .ability-tab {
+    border-radius: 8px;
+  }
+
+  .ability-tab.active {
+    margin-bottom: 0;
+  }
 }

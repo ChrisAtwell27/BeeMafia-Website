@@ -77,8 +77,13 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// Announcement routes
+// API Routes
+const authRoutes = require('./routes/auth');
+const roleRoutes = require('./routes/roles');
 const announcementRoutes = require('./routes/announcements');
+
+app.use('/api/auth', authRoutes);
+app.use('/api/roles', roleRoutes);
 app.use('/api/announcements', announcementRoutes);
 
 // Socket.io connection handling

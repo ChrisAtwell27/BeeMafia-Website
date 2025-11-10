@@ -49,6 +49,32 @@ function initializeSocketHandlers(io) {
             gameManager.startGame(socket, io, data);
         });
 
+        // Add bots (debug mode only)
+        socket.on('add_bots', (data) => {
+            gameManager.addBots(socket, io, data);
+        });
+
+        // Role configuration events
+        socket.on('get_role_config', (data) => {
+            gameManager.getRoleConfig(socket, io, data);
+        });
+
+        socket.on('add_role_to_config', (data) => {
+            gameManager.addRoleToConfig(socket, io, data);
+        });
+
+        socket.on('remove_role_from_config', (data) => {
+            gameManager.removeRoleFromConfig(socket, io, data);
+        });
+
+        socket.on('replace_role_in_config', (data) => {
+            gameManager.replaceRoleInConfig(socket, io, data);
+        });
+
+        socket.on('auto_add_roles', (data) => {
+            gameManager.autoAddRolesToConfig(socket, io, data);
+        });
+
         // Submit night action
         socket.on('night_action', (data) => {
             gameManager.submitNightAction(socket, io, data);
@@ -72,6 +98,11 @@ function initializeSocketHandlers(io) {
         // Dead chat
         socket.on('dead_chat', (data) => {
             gameManager.handleDeadChat(socket, io, data);
+        });
+
+        // Return to lobby after game ends
+        socket.on('return_to_lobby', (data) => {
+            gameManager.returnToLobby(socket, io, data);
         });
 
         // Disconnect

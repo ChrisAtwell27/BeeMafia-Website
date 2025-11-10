@@ -12,14 +12,12 @@ const gameSchema = new mongoose.Schema({
         unique: true
     },
     organizerId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        type: mongoose.Schema.Types.Mixed, // Support both ObjectId and String (for Simple Mode)
         required: true
     },
     players: [{
         userId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
+            type: mongoose.Schema.Types.Mixed // Support both ObjectId and String (for Simple Mode)
         },
         username: String,
         role: String,

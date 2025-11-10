@@ -12,14 +12,17 @@ export function useSocket() {
 }
 
 export function SocketProvider({ children }) {
-  const { username } = useAuth();
+  const { username, authToken } = useAuth();
   const [socket, setSocket] = useState(null);
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
     if (username) {
       const newSocket = io(SOCKET_URL, {
-        auth: { username }
+        auth: {
+          username,
+          token: authToken || undefined // Pass token if authenticated
+        }
       });
 
       newSocket.on('connect', () => {
@@ -54,7 +57,7 @@ export function SocketProvider({ children }) {
         setConnected(false);
       }
     }
-  }, [username]);
+  }, [username, authToken]);
 
   const value = {
     socket,

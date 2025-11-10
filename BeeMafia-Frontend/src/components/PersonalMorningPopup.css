@@ -1,0 +1,187 @@
+.personal-morning-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2950; /* Between night events (3000) and morning summary (2900) */
+  animation: fadeInSlide 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: auto;
+}
+
+.personal-morning-card {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.15));
+  backdrop-filter: blur(16px);
+  border: 3px solid #3b82f6;
+  border-radius: 20px;
+  padding: 2rem 2.5rem;
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.8),
+    0 0 80px rgba(59, 130, 246, 0.4),
+    inset 0 0 30px rgba(255, 255, 255, 0.05);
+  min-width: 400px;
+  max-width: 600px;
+  position: relative;
+}
+
+.popup-close-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: rgba(59, 130, 246, 0.3);
+  border: 2px solid #3b82f6;
+  border-radius: 50%;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e2e8f0;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+  line-height: 1;
+}
+
+.popup-close-btn:hover {
+  background: rgba(59, 130, 246, 0.5);
+  transform: scale(1.1);
+}
+
+.personal-morning-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  justify-content: center;
+}
+
+.personal-icon {
+  font-size: 3rem;
+  animation: paperFlip 0.8s ease-out;
+  filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.8));
+}
+
+.personal-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+  color: #3b82f6;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
+}
+
+.personal-morning-content {
+  color: #e2e8f0;
+}
+
+/* Findings list styling */
+.findings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.finding-entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 10px;
+  border: 2px solid #60a5fa;
+  animation: fadeInUp 0.5s ease-out backwards;
+}
+
+.finding-entry:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.finding-entry:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.finding-entry:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.finding-entry:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+.finding-entry:nth-child(5) {
+  animation-delay: 0.5s;
+}
+
+.finding-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  line-height: 1.5rem;
+}
+
+.finding-message {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #e2e8f0;
+  line-height: 1.5;
+  flex-grow: 1;
+}
+
+/* Animations */
+@keyframes fadeInSlide {
+  0% {
+    transform: translate(-50%, -60%);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-50%, -50%);
+    opacity: 1;
+  }
+}
+
+@keyframes paperFlip {
+  0% {
+    transform: rotateY(-90deg) scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: rotateY(10deg) scale(1.1);
+  }
+  100% {
+    transform: rotateY(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .personal-morning-card {
+    min-width: 300px;
+    max-width: 90vw;
+    padding: 1.5rem 1.5rem;
+  }
+
+  .personal-icon {
+    font-size: 2rem;
+  }
+
+  .personal-title {
+    font-size: 1.5rem;
+  }
+
+  .finding-message {
+    font-size: 1rem;
+  }
+}

@@ -26,16 +26,18 @@ The game will show a **🐛 DEBUG** badge in the lobby.
 
 **Total game cycle:** 6.5 minutes vs ~3.5 minutes per night/day cycle
 
-### 👥 Fewer Players Required + Auto-Fill Bots
+### 👥 Fewer Players Required + Manual Bot Addition
 
 - **Normal Mode:** Minimum 6 players
-- **Debug Mode:** Minimum **2 players**
+- **Debug Mode:** Minimum **1 player**
 
 **🤖 Bot Players:**
-- If you start a debug game with fewer than 6 players, bots automatically fill the remaining slots
-- Bots perform random night actions and vote randomly
-- Perfect for solo testing - start with just 1 player and 5 bots will join!
-- Bot names: BotAlice, BotBob, BotCharlie, etc.
+- **Click "Add Bots" button** in the game lobby to add 11 bots instantly
+- Only available in debug mode and only the host can add bots
+- Bots have enhanced AI with "meta knowledge" - they make smarter decisions in debug mode
+- Bots can investigate, protect, attack, and vote intelligently
+- Perfect for solo testing - add bots and you're ready to start!
+- Bot names: BotAlice, BotBob, BotCharlie, BotDiana, BotEve, BotFrank, BotGrace, BotHank, BotIvy, BotJack, BotKate (and BotLeo if needed)
 
 ## When to Use Debug Mode
 
@@ -55,7 +57,8 @@ The game will show a **🐛 DEBUG** badge in the lobby.
 
 Debug games show:
 - 🐛 **DEBUG** badge on the game card in lobby
-- ⚡ "Fast timers, 2+ players to start" message
+- ⚡ "DEBUG MODE: Fast timers, manual bot addition" message
+- 🤖 **"Add Bots"** button next to "Start Game" (host only)
 - Orange warning color scheme
 
 ## Example Debug Game Flow
@@ -82,30 +85,35 @@ Debug games show:
 
 1. **Solo Testing with Bots:**
    - Create a debug game with just yourself
-   - 5 bots will automatically join
+   - **Click "Add Bots" button** to add 11 bots instantly (lobby fills to 12/12!)
    - Perfect for testing your role's night actions
-   - See how the game flows with bot behavior
+   - See how the game flows with intelligent bot behavior
+   - Bots make smart decisions (target actual wasps, protect key players, etc.)
 
 2. **Test Specific Roles:**
    - Use debug mode to quickly iterate
-   - Bots will provide targets for your actions
+   - Add bots to provide targets for your actions
    - Test win conditions with bot players
+   - Enhanced bot AI helps games reach actual conclusions
 
 3. **Test Game Flow:**
    - Verify phase transitions work
-   - Check voting mechanics (bots vote too!)
-   - Test win conditions
+   - Check voting mechanics (bots vote intelligently!)
+   - Test win conditions with smart bot play
+   - Games complete faster with bot meta-knowledge
 
 4. **Test UI/Features:**
    - Chat functionality
    - Role cards display
    - Night action submission
    - Voting interface
+   - 12-player lobby displays correctly
 
 5. **Multi-Player Debug Testing:**
-   - Open incognito window for 2nd player
-   - Remaining slots fill with bots
-   - Great for testing interactions between real players
+   - Create debug game and add bots
+   - Open incognito window for additional real players
+   - Great for testing interactions in a full lobby
+   - You can add fewer bots if desired (button adds 11 by default)
 
 ## Creating a Debug Test Game
 
@@ -114,13 +122,19 @@ Debug games show:
 1. Enter username: "TestPlayer1"
 2. Create Game:
    - Name: "Debug Test"
-   - Max Players: 6
+   - Max Players: 12 (recommended for debug)
    - Mode: Basic
    - ✅ Debug Mode: ON
+3. Click **"Add Bots"** button to add 11 bots - lobby fills to 12/12!
+4. Click "Start Game" - ready to go immediately!
+
+// Alternative - Testing with multiple humans:
+1-2. Create debug game as above
 3. Open new tab (incognito)
 4. Enter username: "TestPlayer2"
-5. Join the game
-6. Start game (only 2 players needed!)
+5. Join the game (now 2 humans)
+6. Host clicks "Add Bots" to add 11 bots (or fewer)
+7. Start game - only 1 player needed!
 ```
 
 ## Debug Mode Technical Details
@@ -139,19 +153,32 @@ All game logic remains the same - only timers and player requirements change!
 
 ## Troubleshooting
 
-**"Still requires 6 players"**
+**"Can't see Add Bots button"**
 - Make sure the debug checkbox was checked when creating
 - Look for the 🐛 badge on the game card
-- Try creating a new game
+- Only the **host** can see and use the Add Bots button
+- Button only appears in the waiting lobby, not during gameplay
+
+**"Still requires 6 players"**
+- Verify the game shows "DEBUG" badge in lobby
+- Debug mode requires only 1 player to start
+- Try creating a new game with debug mode enabled
 
 **"Timers are still long"**
 - Check that the game shows "DEBUG" badge
-- Timers are set when the game starts, not when created
-- Try restarting the game
+- Timers are set when the game starts
+- Debug timers: 10s setup, 45s night, 90s day, 60s vote
 
 **"Can't find debug option"**
-- Make sure you're on the latest version
-- Check that you're clicking "Create Game" not "Join Game"
+- Look in "Advanced Options" when creating a game
+- Make sure you're clicking "Create Game" not "Join Game"
+- Check that you're on the latest version
+
+**"Bots didn't add"**
+- Make sure you clicked the "Add Bots" button
+- Check that you have available slots (not already at max players)
+- The button adds up to 11 bots or fills remaining slots
+- Toast notification will confirm how many bots were added
 
 ---
 
