@@ -124,6 +124,22 @@ function GamePage() {
       toast.info(`${data.player.username} left the game`);
     });
 
+    socket.on('host_changed', (data) => {
+      setGameState((prev) => ({
+        ...prev,
+        isHost: data.hostId === user?.userId || data.host === user?.username
+      }));
+      toast.info(`${data.host} is now the host`);
+    });
+
+    socket.on('players_updated', (data) => {
+      setGameState((prev) => ({
+        ...prev,
+        players: data.players,
+        isHost: data.players.find(p => p.username === user?.username)?.isHost || prev.isHost
+      }));
+    });
+
     socket.on('game_started', (data) => {
       setGameState((prev) => ({
         ...prev,
@@ -343,6 +359,8 @@ function GamePage() {
       socket.off('joined_game');
       socket.off('player_joined_game');
       socket.off('player_left_game');
+      socket.off('host_changed');
+      socket.off('players_updated');
       socket.off('game_started');
       socket.off('bots_added');
       socket.off('role_assigned');

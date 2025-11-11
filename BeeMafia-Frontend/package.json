@@ -2,6 +2,7 @@
   "name": "beemafia-frontend",
   "version": "1.0.0",
   "description": "BeeMafia game frontend - React application",
+  "homepage": "https://chrisatwell27.github.io/BeeMafia-Website",
   "private": true,
   "dependencies": {
     "@beemafia/shared": "file:../shared",
