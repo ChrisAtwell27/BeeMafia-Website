@@ -1,5 +1,7 @@
 # 🐝 BeeMafia - Web-based Mafia Game
 
+Full Documentation - https://chrisatwell27.github.io/BeeMafia-Website/index.html
+
 A sophisticated multiplayer social deduction game inspired by Town of Salem, with a bee-themed twist! Originally a Discord bot, now fully playable on the web with real-time WebSocket communication.
 
 ## 🎮 Features
