@@ -17,7 +17,8 @@
       "Bash(npm audit:*)",
       "Bash(timeout 30 npm start:*)",
       "Bash(node:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []

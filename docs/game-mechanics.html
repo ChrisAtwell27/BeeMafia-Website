@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Mechanics - BeeMafia</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <span class="bee-icon">🐝</span>
+                <span class="logo-text">BeeMafia</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="roles.html">Roles</a></li>
+                <li><a href="game-mechanics.html" class="active">Game Mechanics</a></li>
+                <li><a href="https://github.com/ChrisAtwell27/BeeMafia-Website" target="_blank">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <header class="page-header">
+        <div class="container">
+            <h1>⚙️ Game Mechanics</h1>
+            <p>Learn how BeeMafia works and master the game</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <section class="section">
+            <h2>Game Phases</h2>
+            <p>Each game of BeeMafia progresses through multiple phases that repeat until a team wins.</p>
+
+            <div class="phase-details">
+                <div class="phase-detail-card">
+                    <div class="phase-icon">🌅</div>
+                    <h3>Setup Phase</h3>
+                    <div class="phase-timer">Duration: 30 seconds</div>
+                    <p>At the start of the game, each player is secretly assigned a role. During this phase:</p>
+                    <ul>
+                        <li>Players receive their role card with abilities and win condition</li>
+                        <li>Players can read and understand their role</li>
+                        <li>No actions can be performed yet</li>
+                        <li>Prepare your strategy based on your role</li>
+                    </ul>
+                </div>
+
+                <div class="phase-detail-card">
+                    <div class="phase-icon">🌙</div>
+                    <h3>Night Phase</h3>
+                    <div class="phase-timer">Duration: 60 seconds</div>
+                    <p>The night is when most roles perform their special abilities:</p>
+                    <ul>
+                        <li>Players with night actions submit their targets</li>
+                        <li>Wasp team members can communicate in secret chat</li>
+                        <li>Dead players can talk in dead chat</li>
+                        <li>Actions are processed at the end of the phase</li>
+                        <li>Results are revealed at the start of the next day</li>
+                    </ul>
+                    <div class="tip">
+                        <strong>Tip:</strong> Submit your action early! You can change it before the phase ends.
+                    </div>
+                </div>
+
+                <div class="phase-detail-card">
+                    <div class="phase-icon">☀️</div>
+                    <h3>Day Phase</h3>
+                    <div class="phase-timer">Duration: 180 seconds</div>
+                    <p>During the day, all living players can discuss what happened:</p>
+                    <ul>
+                        <li>Night results are announced (who died and how)</li>
+                        <li>Players share information and suspicions</li>
+                        <li>Discuss who should be voted out</li>
+                        <li>Form alliances and coordinate strategies</li>
+                        <li>Watch for suspicious behavior or claims</li>
+                    </ul>
+                    <div class="tip">
+                        <strong>Tip:</strong> Pay attention to what players say and who they accuse!
+                    </div>
+                </div>
+
+                <div class="phase-detail-card">
+                    <div class="phase-icon">🗳️</div>
+                    <h3>Voting Phase</h3>
+                    <div class="phase-timer">Duration: 120 seconds</div>
+                    <p>Time to decide who gets eliminated:</p>
+                    <ul>
+                        <li>Click on a player's name to vote for them</li>
+                        <li>You can change your vote before the phase ends</li>
+                        <li>The player with the most votes is lynched</li>
+                        <li>Ties result in no elimination</li>
+                        <li>Lynched players reveal their role and die</li>
+                    </ul>
+                    <div class="tip">
+                        <strong>Tip:</strong> Vote based on evidence and discussion, not random guesses!
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>Attack and Defense System</h2>
+            <p>BeeMafia uses a tiered attack and defense system. If an attack's power is greater than the target's defense, the target dies.</p>
+
+            <div class="systems-grid">
+                <div class="system-card">
+                    <h3>🗡️ Attack Levels</h3>
+                    <div class="level-list">
+                        <div class="level-item">
+                            <span class="level-badge level-0">0</span>
+                            <div class="level-info">
+                                <strong>No Attack</strong>
+                                <p>Cannot kill players</p>
+                            </div>
+                        </div>
+                        <div class="level-item">
+                            <span class="level-badge level-1">1</span>
+                            <div class="level-info">
+                                <strong>Basic Attack</strong>
+                                <p>Standard killing power (Wasp kills, Soldier Bee)</p>
+                            </div>
+                        </div>
+                        <div class="level-item">
+                            <span class="level-badge level-2">2</span>
+                            <div class="level-info">
+                                <strong>Powerful Attack</strong>
+                                <p>Strong attacks (Veteran Bee, Murder Hornet)</p>
+                            </div>
+                        </div>
+                        <div class="level-item">
+                            <span class="level-badge level-3">3</span>
+                            <div class="level-info">
+                                <strong>Unstoppable Attack</strong>
+                                <p>Cannot be blocked (Fire Ant ignite)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="system-card">
+                    <h3>🛡️ Defense Levels</h3>
+                    <div class="level-list">
+                        <div class="level-item">
+                            <span class="level-badge level-0">0</span>
+                            <div class="level-info">
+                                <strong>No Defense</strong>
+                                <p>Vulnerable to all attacks</p>
+                            </div>
+                        </div>
+                        <div class="level-item">
+                            <span class="level-badge level-1">1</span>
+                            <div class="level-info">
+                                <strong>Basic Defense</strong>
+                                <p>Blocks basic attacks (Nurse Bee heal)</p>
+                            </div>
+                        </div>
+                        <div class="level-item">
+                            <span class="level-badge level-2">2</span>
+                            <div class="level-info">
+                                <strong>Powerful Defense</strong>
+                                <p>Blocks basic and powerful attacks (Butterfly vest)</p>
+                            </div>
+                        </div>
+                        <div class="level-item">
+                            <span class="level-badge level-3">3</span>
+                            <div class="level-info">
+                                <strong>Invincible Defense</strong>
+                                <p>Blocks all attacks except unstoppable</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mechanics-note">
+                <strong>How it works:</strong> If attack power > defense level, the target dies. For example:
+                <ul>
+                    <li>Basic Attack (1) vs No Defense (0) = Target dies</li>
+                    <li>Basic Attack (1) vs Basic Defense (1) = Target survives</li>
+                    <li>Powerful Attack (2) vs Basic Defense (1) = Target dies</li>
+                    <li>Unstoppable Attack (3) vs Powerful Defense (2) = Target dies</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>Night Action Types</h2>
+            <p>BeeMafia features over 40 different action types. Here are the main categories:</p>
+
+            <div class="actions-grid">
+                <div class="action-category">
+                    <h3>🔍 Investigation</h3>
+                    <ul>
+                        <li><strong>Investigate Suspicious:</strong> Learn if target is Wasp/Neutral Evil</li>
+                        <li><strong>Investigate Exact:</strong> Learn target's exact role</li>
+                        <li><strong>Lookout:</strong> See who visits your target</li>
+                        <li><strong>Track:</strong> See who your target visits</li>
+                        <li><strong>Spy:</strong> See Wasp actions and chat</li>
+                        <li><strong>Psychic:</strong> Receive visions of suspects</li>
+                    </ul>
+                </div>
+
+                <div class="action-category">
+                    <h3>🛡️ Protection</h3>
+                    <ul>
+                        <li><strong>Heal:</strong> Provide basic defense to target</li>
+                        <li><strong>Guard:</strong> Die instead of target if attacked</li>
+                        <li><strong>Jail:</strong> Protect and roleblock target</li>
+                        <li><strong>Vest:</strong> Self-protection with powerful defense</li>
+                        <li><strong>Alert:</strong> Kill all visitors</li>
+                    </ul>
+                </div>
+
+                <div class="action-category">
+                    <h3>⚔️ Killing</h3>
+                    <ul>
+                        <li><strong>Mafia Kill:</strong> Coordinated Wasp team kill</li>
+                        <li><strong>Shoot:</strong> Limited-use kill (bullets)</li>
+                        <li><strong>Serial Kill:</strong> Kill target every night</li>
+                        <li><strong>Execute:</strong> Kill jailed target</li>
+                        <li><strong>Poison:</strong> Delayed kill over 2 nights</li>
+                    </ul>
+                </div>
+
+                <div class="action-category">
+                    <h3>🎭 Deception</h3>
+                    <ul>
+                        <li><strong>Disguise:</strong> Appear as dead player's role</li>
+                        <li><strong>Clean:</strong> Hide dead player's role</li>
+                        <li><strong>Hypnotize:</strong> Give false information</li>
+                        <li><strong>Deceive:</strong> Twist target's messages</li>
+                        <li><strong>Blackmail:</strong> Silence target during day</li>
+                    </ul>
+                </div>
+
+                <div class="action-category">
+                    <h3>🔄 Manipulation</h3>
+                    <ul>
+                        <li><strong>Roleblock:</strong> Prevent target's action</li>
+                        <li><strong>Transport:</strong> Swap two players</li>
+                        <li><strong>Witch Control:</strong> Control target's action</li>
+                        <li><strong>Trap:</strong> Roleblock attackers</li>
+                    </ul>
+                </div>
+
+                <div class="action-category">
+                    <h3>🌟 Special</h3>
+                    <ul>
+                        <li><strong>Revive:</strong> Use dead Bee's ability</li>
+                        <li><strong>Remember:</strong> Become a dead player's role</li>
+                        <li><strong>Douse & Ignite:</strong> Mark then kill all doused</li>
+                        <li><strong>Pirate Duel:</strong> Challenge to rock-paper-scissors</li>
+                        <li><strong>Guardian:</strong> Protect assigned target</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>Chat System</h2>
+            <p>Communication is key in BeeMafia. Different chat channels are available based on your role and status:</p>
+
+            <div class="chat-types">
+                <div class="chat-type-card">
+                    <h3>💬 All Chat</h3>
+                    <p>Available to all living players during Day Phase</p>
+                    <ul>
+                        <li>Discuss night results and suspicions</li>
+                        <li>Share investigation results (or lies!)</li>
+                        <li>Coordinate voting decisions</li>
+                        <li>Visible to everyone who is alive</li>
+                    </ul>
+                </div>
+
+                <div class="chat-type-card">
+                    <h3>🐝 Wasp Chat</h3>
+                    <p>Private chat for Wasp team members at night</p>
+                    <ul>
+                        <li>Only Wasp team can see and send messages</li>
+                        <li>Coordinate who to kill</li>
+                        <li>Share investigation results from Spy Wasp</li>
+                        <li>Plan deception strategies</li>
+                        <li>Spy Bee can read this chat!</li>
+                    </ul>
+                </div>
+
+                <div class="chat-type-card">
+                    <h3>👻 Dead Chat</h3>
+                    <p>Available to all dead players</p>
+                    <ul>
+                        <li>Watch the game unfold</li>
+                        <li>Discuss what happened</li>
+                        <li>Living players cannot see this chat</li>
+                        <li>Medium Bee can communicate with dead</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>Win Conditions</h2>
+            <p>Different teams and roles have different ways to achieve victory:</p>
+
+            <div class="win-conditions">
+                <div class="win-card">
+                    <h3>🐝 Bee Team Victory</h3>
+                    <p class="win-requirement">Eliminate all Wasps and harmful Neutrals</p>
+                    <div class="win-details">
+                        <p>The Bee team wins when there are no more threats remaining. This includes:</p>
+                        <ul>
+                            <li>All Wasp team members eliminated</li>
+                            <li>All Neutral Killing roles eliminated (Murder Hornet, Fire Ant, etc.)</li>
+                            <li>All Neutral Evil roles eliminated (except Spider, who can side with Bees)</li>
+                            <li>Neutral Benign roles can survive with Bees</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="win-card">
+                    <h3>🐝 Wasp Team Victory</h3>
+                    <p class="win-requirement">Equal or outnumber all other players</p>
+                    <div class="win-details">
+                        <p>Wasps win through elimination and deception:</p>
+                        <ul>
+                            <li>When Wasps ≥ (Bees + Neutrals)</li>
+                            <li>No hostile Neutrals that can kill Wasps remain</li>
+                            <li>Voting becomes impossible for non-Wasps</li>
+                            <li>Wasps can kill faster than they can be eliminated</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="win-card">
+                    <h3>⚖️ Neutral Win Conditions</h3>
+                    <p class="win-requirement">Varies by role</p>
+                    <div class="win-details">
+                        <ul>
+                            <li><strong>Murder Hornet / Fire Ant:</strong> Be the last player alive</li>
+                            <li><strong>Clown Beetle:</strong> Get lynched during voting</li>
+                            <li><strong>Bounty Hunter:</strong> Get your target lynched</li>
+                            <li><strong>Spider:</strong> Survive to see Bees or Wasps lose</li>
+                            <li><strong>Butterfly / Gossip Beetle:</strong> Survive until game ends</li>
+                            <li><strong>Pirate Beetle:</strong> Win 2 duels</li>
+                            <li><strong>Guardian Ant:</strong> Your target survives and wins</li>
+                            <li><strong>Matchmaker Beetle:</strong> Your linked partner wins</li>
+                            <li><strong>Amnesiac:</strong> Remember a role then achieve that win condition</li>
+                            <li><strong>Mercenary:</strong> Your assigned team wins</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>Strategy Tips</h2>
+            <div class="tips-grid">
+                <div class="tip-card">
+                    <h3>🐝 As a Bee</h3>
+                    <ul>
+                        <li>Share your investigation results to find evils</li>
+                        <li>Protect confirmed Bee roles</li>
+                        <li>Watch for contradictions in claims</li>
+                        <li>Vote together to eliminate threats</li>
+                        <li>Don't reveal your role unless necessary</li>
+                    </ul>
+                </div>
+
+                <div class="tip-card">
+                    <h3>🐝 As a Wasp</h3>
+                    <ul>
+                        <li>Coordinate kills in private chat</li>
+                        <li>Claim a believable Bee role</li>
+                        <li>Accuse others to deflect suspicion</li>
+                        <li>Target investigators and protectors first</li>
+                        <li>Support your teammates' claims</li>
+                    </ul>
+                </div>
+
+                <div class="tip-card">
+                    <h3>⚖️ As a Neutral</h3>
+                    <ul>
+                        <li>Keep your true role hidden</li>
+                        <li>Play to your specific win condition</li>
+                        <li>Can claim to be Bee or Wasp as needed</li>
+                        <li>Kingmaker role in close games</li>
+                        <li>Adapt strategy based on game state</li>
+                    </ul>
+                </div>
+
+                <div class="tip-card">
+                    <h3>🎯 General Tips</h3>
+                    <ul>
+                        <li>Pay attention to voting patterns</li>
+                        <li>Keep notes on player claims and actions</li>
+                        <li>Use the process of elimination</li>
+                        <li>Read the chat carefully for slips</li>
+                        <li>Balance aggression with caution</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>Action Priority</h2>
+            <p>When multiple actions happen to the same player, they resolve in this order:</p>
+            <div class="priority-list">
+                <ol>
+                    <li><strong>Transport:</strong> Swaps happen first, redirecting all other actions</li>
+                    <li><strong>Jail:</strong> Jailed targets are protected and roleblocked</li>
+                    <li><strong>Witch Control:</strong> Changes target's action target</li>
+                    <li><strong>Roleblock:</strong> Prevents target's action</li>
+                    <li><strong>Protection:</strong> Heals and guards apply</li>
+                    <li><strong>Investigation:</strong> Info gathering actions</li>
+                    <li><strong>Attacks:</strong> Killing actions resolve</li>
+                    <li><strong>Deception:</strong> Disguises and cleans apply after death</li>
+                </ol>
+            </div>
+        </section>
+
+        <div class="cta-section">
+            <h2>Ready to play?</h2>
+            <p>Now that you understand the mechanics, check out all the roles!</p>
+            <a href="roles.html" class="btn btn-primary">View All Roles</a>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>Made with ❤️ and 🐝</p>
+            <p>Inspired by Town of Salem and classic Mafia/Werewolf games</p>
+            <div class="footer-links">
+                <a href="https://github.com/ChrisAtwell27/BeeMafia-Website" target="_blank">GitHub</a>
+                <span>•</span>
+                <a href="https://github.com/ChrisAtwell27/BeeMafia-Website/issues" target="_blank">Report Issues</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

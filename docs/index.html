@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeeMafia - Web-Based Social Deduction Game</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <span class="bee-icon">🐝</span>
+                <span class="logo-text">BeeMafia</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="active">Home</a></li>
+                <li><a href="roles.html">Roles</a></li>
+                <li><a href="game-mechanics.html">Game Mechanics</a></li>
+                <li><a href="https://github.com/ChrisAtwell27/BeeMafia-Website" target="_blank">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-content">
+            <h1>🐝 BeeMafia</h1>
+            <p class="hero-subtitle">A sophisticated multiplayer social deduction game with a bee-themed twist!</p>
+            <p class="hero-description">Originally a Discord bot, now fully playable on the web with real-time multiplayer action.</p>
+            <div class="hero-buttons">
+                <a href="#features" class="btn btn-primary">Explore Features</a>
+                <a href="roles.html" class="btn btn-secondary">View All Roles</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <section id="about" class="section">
+            <h2>About BeeMafia</h2>
+            <p>BeeMafia is a web-based multiplayer social deduction game inspired by Town of Salem and classic Mafia/Werewolf games. Players are secretly assigned roles and must work together (or against each other) to achieve their team's victory condition.</p>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">56+</div>
+                    <div class="stat-label">Unique Roles</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">3</div>
+                    <div class="stat-label">Teams</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">4</div>
+                    <div class="stat-label">Game Modes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">40+</div>
+                    <div class="stat-label">Action Types</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="teams" class="section">
+            <h2>Teams</h2>
+            <div class="teams-grid">
+                <div class="team-card bee-team">
+                    <div class="team-icon">🐝</div>
+                    <h3>Bee Team (Town)</h3>
+                    <p class="team-goal">Win by eliminating all Wasps and harmful Neutrals</p>
+                    <ul class="team-features">
+                        <li>Investigative roles to find evil players</li>
+                        <li>Protective roles to save teammates</li>
+                        <li>Killing roles to eliminate threats</li>
+                        <li>Support roles for information gathering</li>
+                    </ul>
+                    <a href="roles.html#bee-roles" class="btn btn-small">View Bee Roles</a>
+                </div>
+
+                <div class="team-card wasp-team">
+                    <div class="team-icon">🐝</div>
+                    <h3>Wasp Team (Mafia)</h3>
+                    <p class="team-goal">Win by equaling or outnumbering all other players</p>
+                    <ul class="team-features">
+                        <li>Secret night chat to coordinate</li>
+                        <li>Deception roles to mislead the Bees</li>
+                        <li>Killing roles to eliminate players</li>
+                        <li>Support roles to gather information</li>
+                    </ul>
+                    <a href="roles.html#wasp-roles" class="btn btn-small">View Wasp Roles</a>
+                </div>
+
+                <div class="team-card neutral-team">
+                    <div class="team-icon">⚖️</div>
+                    <h3>Neutral Team</h3>
+                    <p class="team-goal">Various unique win conditions</p>
+                    <ul class="team-features">
+                        <li>Killing neutrals: Be the last one standing</li>
+                        <li>Evil neutrals: Chaos and individual goals</li>
+                        <li>Benign neutrals: Just survive</li>
+                        <li>Can swing the balance of power</li>
+                    </ul>
+                    <a href="roles.html#neutral-roles" class="btn btn-small">View Neutral Roles</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="section">
+            <h2>Game Features</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🎭</div>
+                    <h3>56+ Unique Roles</h3>
+                    <p>From Queen's Guard to Murder Hornet, each role has unique abilities and win conditions</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Real-time Multiplayer</h3>
+                    <p>WebSocket-powered instant updates and communication</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🌙</div>
+                    <h3>Complex Night Actions</h3>
+                    <p>40+ different action types including investigation, protection, and deception</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💬</div>
+                    <h3>Team Chat System</h3>
+                    <p>All chat, Wasp chat, and Dead chat for strategic communication</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚔️</div>
+                    <h3>Attack/Defense System</h3>
+                    <p>4 levels of attack power and defense creating tactical depth</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎮</div>
+                    <h3>Multiple Game Modes</h3>
+                    <p>Basic, Chaos, Investigative, and Killing modes for variety</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="game-flow" class="section">
+            <h2>How to Play</h2>
+            <div class="game-flow">
+                <div class="phase-card">
+                    <div class="phase-number">1</div>
+                    <h3>Setup Phase</h3>
+                    <p class="phase-duration">30 seconds</p>
+                    <p>Players receive their secret roles and read their abilities</p>
+                </div>
+                <div class="phase-arrow">→</div>
+                <div class="phase-card">
+                    <div class="phase-number">2</div>
+                    <h3>Night Phase</h3>
+                    <p class="phase-duration">60 seconds</p>
+                    <p>Players with night abilities submit their actions in secret</p>
+                </div>
+                <div class="phase-arrow">→</div>
+                <div class="phase-card">
+                    <div class="phase-number">3</div>
+                    <h3>Day Phase</h3>
+                    <p class="phase-duration">180 seconds</p>
+                    <p>Discuss what happened and deduce who the evil players are</p>
+                </div>
+                <div class="phase-arrow">→</div>
+                <div class="phase-card">
+                    <div class="phase-number">4</div>
+                    <h3>Voting Phase</h3>
+                    <p class="phase-duration">120 seconds</p>
+                    <p>Vote to eliminate a suspected player from the game</p>
+                </div>
+            </div>
+            <p class="flow-note">Repeat Night → Day → Voting until a team achieves victory!</p>
+            <a href="game-mechanics.html" class="btn btn-primary">Learn More About Game Mechanics</a>
+        </section>
+
+        <section id="game-modes" class="section">
+            <h2>Game Modes</h2>
+            <div class="modes-grid">
+                <div class="mode-card">
+                    <h3>🎯 Basic</h3>
+                    <p>Balanced classic setup with standard roles. Perfect for learning the game.</p>
+                </div>
+                <div class="mode-card">
+                    <h3>🌪️ Chaos</h3>
+                    <p>Maximum chaos with unpredictable neutral roles. Expect the unexpected!</p>
+                </div>
+                <div class="mode-card">
+                    <h3>🔍 Investigative</h3>
+                    <p>Information warfare with lots of investigative roles. Deduce and outsmart!</p>
+                </div>
+                <div class="mode-card">
+                    <h3>💀 Killing</h3>
+                    <p>Blood bath mode with lots of killing roles. Only the strong survive!</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="tech-stack" class="section">
+            <h2>Technology Stack</h2>
+            <div class="tech-columns">
+                <div class="tech-column">
+                    <h3>Backend</h3>
+                    <ul>
+                        <li>Node.js & Express</li>
+                        <li>Socket.io for real-time communication</li>
+                        <li>MongoDB with Mongoose</li>
+                        <li>JWT authentication</li>
+                        <li>OpenAI API integration</li>
+                    </ul>
+                </div>
+                <div class="tech-column">
+                    <h3>Frontend</h3>
+                    <ul>
+                        <li>React 18</li>
+                        <li>React Router</li>
+                        <li>Socket.io Client</li>
+                        <li>Axios for HTTP requests</li>
+                        <li>React Toastify</li>
+                    </ul>
+                </div>
+                <div class="tech-column">
+                    <h3>Game Logic</h3>
+                    <ul>
+                        <li>Platform-agnostic design</li>
+                        <li>Modular role system</li>
+                        <li>Configurable abilities</li>
+                        <li>Multiple game presets</li>
+                        <li>Extensible architecture</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="get-started" class="section cta-section">
+            <h2>Ready to Play?</h2>
+            <p>Join the hive and test your deduction skills!</p>
+            <div class="cta-buttons">
+                <a href="https://github.com/ChrisAtwell27/BeeMafia-Website" class="btn btn-primary" target="_blank">View on GitHub</a>
+                <a href="roles.html" class="btn btn-secondary">Explore All Roles</a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>Made with ❤️ and 🐝</p>
+            <p>Inspired by Town of Salem and classic Mafia/Werewolf games</p>
+            <div class="footer-links">
+                <a href="https://github.com/ChrisAtwell27/BeeMafia-Website" target="_blank">GitHub</a>
+                <span>•</span>
+                <a href="https://github.com/ChrisAtwell27/BeeMafia-Website/issues" target="_blank">Report Issues</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

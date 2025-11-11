@@ -49,8 +49,9 @@ function GamePage() {
 
   // Track shown night events to prevent duplicates
   const shownNightEventsRef = useRef(new Set());
-  // Track current night number for event deduplication
-  const currentNightNumberRef = useRef(0);
+  const lastEventTimestampRef = useRef({});
+  // Track death notification separately - once you die, you stay dead
+  const hasSeenDeathNotification = useRef(false);
 
   // Phase duration settings (in seconds)
   const [phaseDurations, setPhaseDurations] = useState({
@@ -145,6 +146,12 @@ function GamePage() {
         ...prev,
         phase: data.phase
       }));
+
+      // Reset event tracking for new game
+      shownNightEventsRef.current.clear();
+      lastEventTimestampRef.current = {};
+      hasSeenDeathNotification.current = false;
+
       toast.success('Game started! Check your role');
       addEvent('game_start', 'The game has begun! Roles have been assigned.');
     });
@@ -178,14 +185,10 @@ function GamePage() {
       }));
       setPhaseTimer(data.duration);
 
-      // Update night number ref for event deduplication
-      if (data.nightNumber !== undefined) {
-        currentNightNumberRef.current = data.nightNumber;
-      }
-
-      // Clear shown night events when day starts (for next night's events)
-      if (data.phase === 'day') {
+      // Clear shown night events when night starts (for new night's events)
+      if (data.phase === 'night') {
         shownNightEventsRef.current.clear();
+        lastEventTimestampRef.current = {};
       }
 
       // Show phase notification by incrementing key to force remount
@@ -286,24 +289,47 @@ function GamePage() {
     });
 
     socket.on('night_event', (event) => {
-      // Only show if we haven't shown this type of event for this night already
-      const eventTypeId = `${event.type}_${currentNightNumberRef.current}`;
-      if (!shownNightEventsRef.current.has(eventTypeId)) {
-        shownNightEventsRef.current.add(eventTypeId);
+      const now = Date.now();
+      const eventType = event.type;
 
-        // Show notification popup
-        setNightEvent(event);
-        setNightEventKey((prev) => prev + 1);
-
-        // Also show toast for important events
-        if (event.type === 'killed') {
-          toast.error('💀 You died!', { autoClose: 5000 });
-        } else if (event.type === 'poisoned') {
-          toast.error('☠️ You were poisoned! You will die in 2 nights unless healed.', { autoClose: 7000 });
+      // Special handling for death - NEVER show death notification more than once
+      if (eventType === 'killed') {
+        if (hasSeenDeathNotification.current) {
+          // Already seen death notification, never show again
+          return;
         }
+        hasSeenDeathNotification.current = true;
       }
 
-      // Log event (always log, even if we don't show popup)
+      // Check if we've shown this event type already this night
+      if (shownNightEventsRef.current.has(eventType)) {
+        // Already shown this event type, skip
+        return;
+      }
+
+      // Check timestamp to prevent rapid duplicates (within 1 second)
+      const lastTimestamp = lastEventTimestampRef.current[eventType] || 0;
+      if (now - lastTimestamp < 1000) {
+        // Too soon after last event of this type, skip
+        return;
+      }
+
+      // Mark as shown
+      shownNightEventsRef.current.add(eventType);
+      lastEventTimestampRef.current[eventType] = now;
+
+      // Show notification popup
+      setNightEvent(event);
+      setNightEventKey((prev) => prev + 1);
+
+      // Also show toast for important events
+      if (event.type === 'killed') {
+        toast.error('💀 You died!', { autoClose: 5000 });
+      } else if (event.type === 'poisoned') {
+        toast.error('☠️ You were poisoned! You will die in 2 nights unless healed.', { autoClose: 7000 });
+      }
+
+      // Log event
       addEvent(event.type, getEventMessage(event));
     });
 
@@ -345,6 +371,12 @@ function GamePage() {
         isHost: data.players.find(p => p.username === user?.username)?.isHost || false,
         nightNumber: 0
       });
+
+      // Reset event tracking
+      shownNightEventsRef.current.clear();
+      lastEventTimestampRef.current = {};
+      hasSeenDeathNotification.current = false;
+
       toast.info('Returned to lobby');
       addEvent('lobby_return', 'Game returned to lobby. Ready for next match!');
     });

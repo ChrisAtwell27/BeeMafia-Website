@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Roles - BeeMafia</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <span class="bee-icon">🐝</span>
+                <span class="logo-text">BeeMafia</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="roles.html" class="active">Roles</a></li>
+                <li><a href="game-mechanics.html">Game Mechanics</a></li>
+                <li><a href="https://github.com/ChrisAtwell27/BeeMafia-Website" target="_blank">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <header class="page-header">
+        <div class="container">
+            <h1>🎭 All Roles</h1>
+            <p>Discover all 56+ unique roles across 3 teams</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="filter-section">
+            <h3>Filter by Team:</h3>
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-team="all">All Roles</button>
+                <button class="filter-btn" data-team="bee">🐝 Bee Team</button>
+                <button class="filter-btn" data-team="wasp">🐝 Wasp Team</button>
+                <button class="filter-btn" data-team="neutral">⚖️ Neutral</button>
+            </div>
+        </div>
+
+        <section id="bee-roles" class="roles-section" data-team="bee">
+            <h2>🐝 Bee Team Roles (Town)</h2>
+            <p class="team-description">The Bee team must work together to identify and eliminate all Wasps and harmful Neutrals. They win through investigation, protection, and elimination of threats.</p>
+
+            <div class="roles-grid">
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">👮</span>
+                        <h3>Queen's Guard</h3>
+                    </div>
+                    <p class="role-description">You can investigate one player each night to see if they are suspicious (Wasp/Neutral Evil).</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Bee</p>
+                        <p><strong>Ability:</strong> Investigate Suspicious</p>
+                        <p><strong>Win Condition:</strong> Eliminate all Wasps and harmful Neutrals</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🔍</span>
+                        <h3>Scout Bee</h3>
+                    </div>
+                    <p class="role-description">You can investigate one player each night to learn their exact role.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Bee</p>
+                        <p><strong>Ability:</strong> Investigate Exact Role</p>
+                        <p><strong>Win Condition:</strong> Eliminate all Wasps and harmful Neutrals</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">⚕️</span>
+                        <h3>Nurse Bee</h3>
+                    </div>
+                    <p class="role-description">You can heal one player each night, protecting them from basic attacks. You have 1 self-heal.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Bee</p>
+                        <p><strong>Ability:</strong> Heal (Basic Protection)</p>
+                        <p><strong>Win Condition:</strong> Eliminate all Wasps and harmful Neutrals</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🛡️</span>
+                        <h3>Bodyguard Bee</h3>
+                    </div>
+                    <p class="role-description">You can protect one player each night. If they are attacked, you will die instead fighting the attacker.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Bee</p>
+                        <p><strong>Ability:</strong> Guard (Powerful Protection)</p>
+                        <p><strong>Win Condition:</strong> Eliminate all Wasps and harmful Neutrals</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">👁️</span>
+                        <h3>Lookout Bee</h3>
+                    </div>
+                    <p class="role-description">You can watch one player each night to see who visits them.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Bee</p>
+                        <p><strong>Ability:</strong> Lookout</p>
+                        <p><strong>Win Condition:</strong> Eliminate all Wasps and harmful Neutrals</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🗺️</span>
+                        <h3>Tracker Bee</h3>
+                    </div>
+                    <p class="role-description">You can follow one player each night to see who they visit.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Bee</p>
+                        <p><strong>Ability:</strong> Track</p>
+                        <p><strong>Win Condition:</strong> Eliminate all Wasps and harmful Neutrals</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">⚔️</span>
+                        <h3>Soldier Bee</h3>
+                    </div>
+                    <p class="role-description">You have 1 bullet. You can shoot one player at night.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Bee</p>
+                        <p><strong>Ability:</strong> Shoot (1 bullet, Basic Attack)</p>
+                        <p><strong>Win Condition:</strong> Eliminate all Wasps and harmful Neutrals</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🎖️</span>
+                        <h3>Veteran Bee</h3>
+                    </div>
+                    <p class="role-description">You can go on alert at night, killing anyone who visits you. You have 3 alerts.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Bee</p>
+                        <p><strong>Ability:</strong> Alert (3 uses, Powerful Attack)</p>
+                        <p><strong>Win Condition:</strong> Eliminate all Wasps and harmful Neutrals</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">⛓️</span>
+                        <h3>Jailer Bee</h3>
+                    </div>
+                    <p class="role-description">You can jail one player each night, protecting them but preventing their actions. You can execute your jailed target up to 3 times.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Bee</p>
+                        <p><strong>Ability:</strong> Jail + Execute (3 executions)</p>
+                        <p><strong>Win Condition:</strong> Eliminate all Wasps and harmful Neutrals</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">💃</span>
+                        <h3>Escort Bee</h3>
+                    </div>
+                    <p class="role-description">You can distract one player each night, preventing them from performing their action.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Bee</p>
+                        <p><strong>Ability:</strong> Roleblock</p>
+                        <p><strong>Win Condition:</strong> Eliminate all Wasps and harmful Neutrals</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🪤</span>
+                        <h3>Trapper Bee</h3>
+                    </div>
+                    <p class="role-description">You can set a trap at one player's house. If an attacker visits, they are roleblocked and revealed to you.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Bee</p>
+                        <p><strong>Ability:</strong> Trap</p>
+                        <p><strong>Win Condition:</strong> Eliminate all Wasps and harmful Neutrals</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🕵️</span>
+                        <h3>Spy Bee</h3>
+                    </div>
+                    <p class="role-description">You can see who the Wasps visit each night and read all their communications.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Bee</p>
+                        <p><strong>Ability:</strong> Spy (See Wasp actions and chat)</p>
+                        <p><strong>Win Condition:</strong> Eliminate all Wasps and harmful Neutrals</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🔄</span>
+                        <h3>Transporter Bee</h3>
+                    </div>
+                    <p class="role-description">You can swap two players each night, redirecting all actions targeting them.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Bee</p>
+                        <p><strong>Ability:</strong> Transport (Swap two players)</p>
+                        <p><strong>Win Condition:</strong> Eliminate all Wasps and harmful Neutrals</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🔮</span>
+                        <h3>Psychic Bee</h3>
+                    </div>
+                    <p class="role-description">You receive visions showing you suspects each night.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Bee</p>
+                        <p><strong>Ability:</strong> Psychic Vision</p>
+                        <p><strong>Win Condition:</strong> Eliminate all Wasps and harmful Neutrals</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">⚰️</span>
+                        <h3>Retributionist Bee</h3>
+                    </div>
+                    <p class="role-description">Once per game, you can revive a dead Bee to use their ability for one night.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Bee</p>
+                        <p><strong>Ability:</strong> Revive (One-time use)</p>
+                        <p><strong>Win Condition:</strong> Eliminate all Wasps and harmful Neutrals</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">👻</span>
+                        <h3>Medium Bee</h3>
+                    </div>
+                    <p class="role-description">You can speak with ALL dead players at night and they can speak back.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Bee</p>
+                        <p><strong>Ability:</strong> Communicate with dead</p>
+                        <p><strong>Win Condition:</strong> Eliminate all Wasps and harmful Neutrals</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">👑</span>
+                        <h3>Queen Bee</h3>
+                    </div>
+                    <p class="role-description">You can reveal yourself during the day to gain 3 extra votes.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Bee</p>
+                        <p><strong>Ability:</strong> Reveal for 3 extra votes</p>
+                        <p><strong>Win Condition:</strong> Eliminate all Wasps and harmful Neutrals</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🐝</span>
+                        <h3>Worker Bee</h3>
+                    </div>
+                    <p class="role-description">You have no special abilities, but you can help identify threats through discussion and voting.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Bee</p>
+                        <p><strong>Ability:</strong> None</p>
+                        <p><strong>Win Condition:</strong> Eliminate all Wasps and harmful Neutrals</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="wasp-roles" class="roles-section" data-team="wasp">
+            <h2>🐝 Wasp Team Roles (Mafia)</h2>
+            <p class="team-description">The Wasp team works in secret to eliminate other players. They communicate privately at night and win when they equal or outnumber all others.</p>
+
+            <div class="roles-grid">
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">👸</span>
+                        <h3>Wasp Queen</h3>
+                    </div>
+                    <p class="role-description">You are the leader of the Wasps. You choose who to kill each night and cannot be detected by Queen's Guard.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Wasp</p>
+                        <p><strong>Ability:</strong> Mafia Kill (Basic Attack)</p>
+                        <p><strong>Win Condition:</strong> Equal or outnumber all other players</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🗡️</span>
+                        <h3>Killer Wasp</h3>
+                    </div>
+                    <p class="role-description">You carry out the kills for the Wasp team.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Wasp</p>
+                        <p><strong>Ability:</strong> Mafia Kill (Basic Attack)</p>
+                        <p><strong>Win Condition:</strong> Equal or outnumber all other players</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🕵️</span>
+                        <h3>Spy Wasp</h3>
+                    </div>
+                    <p class="role-description">You can investigate one player each night to learn their exact role.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Wasp</p>
+                        <p><strong>Ability:</strong> Consigliere (Learn exact role)</p>
+                        <p><strong>Win Condition:</strong> Equal or outnumber all other players</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">💋</span>
+                        <h3>Consort Wasp</h3>
+                    </div>
+                    <p class="role-description">You can distract one player each night, preventing them from performing their action.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Wasp</p>
+                        <p><strong>Ability:</strong> Roleblock</p>
+                        <p><strong>Win Condition:</strong> Equal or outnumber all other players</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🧹</span>
+                        <h3>Janitor Wasp</h3>
+                    </div>
+                    <p class="role-description">You can clean up a dead body, hiding their role and last will. You have 3 cleans.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Wasp</p>
+                        <p><strong>Ability:</strong> Clean Bodies (3 uses)</p>
+                        <p><strong>Win Condition:</strong> Equal or outnumber all other players</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🎪</span>
+                        <h3>Disguiser Wasp</h3>
+                    </div>
+                    <p class="role-description">You can disguise as someone who died, making you appear as their role to investigators. You have 3 disguises.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Wasp</p>
+                        <p><strong>Ability:</strong> Disguise (3 uses)</p>
+                        <p><strong>Win Condition:</strong> Equal or outnumber all other players</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🤐</span>
+                        <h3>Blackmailer Wasp</h3>
+                    </div>
+                    <p class="role-description">You can blackmail one player each night, silencing them for the next day.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Wasp</p>
+                        <p><strong>Ability:</strong> Blackmail (Silence player)</p>
+                        <p><strong>Win Condition:</strong> Equal or outnumber all other players</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🎭</span>
+                        <h3>Deceiver Wasp</h3>
+                    </div>
+                    <p class="role-description">You can deceive one player each night, twisting their words during the next day phase.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Wasp</p>
+                        <p><strong>Ability:</strong> Deceive (Twist messages)</p>
+                        <p><strong>Win Condition:</strong> Equal or outnumber all other players</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🌀</span>
+                        <h3>Hypnotist Wasp</h3>
+                    </div>
+                    <p class="role-description">You can hypnotize one player each night, giving them false information.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Wasp</p>
+                        <p><strong>Ability:</strong> Hypnotize (False info)</p>
+                        <p><strong>Win Condition:</strong> Equal or outnumber all other players</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🧪</span>
+                        <h3>Poisoner Wasp</h3>
+                    </div>
+                    <p class="role-description">You can poison one player, who will die in 2 nights.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Wasp</p>
+                        <p><strong>Ability:</strong> Poison (2-night delay, Basic Attack)</p>
+                        <p><strong>Win Condition:</strong> Equal or outnumber all other players</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="neutral-roles" class="roles-section" data-team="neutral">
+            <h2>⚖️ Neutral Roles</h2>
+            <p class="team-description">Neutral roles have unique win conditions and can swing the balance of power. They play for themselves, not for Bees or Wasps.</p>
+
+            <h3 class="subteam-title">Neutral Killing</h3>
+            <div class="roles-grid">
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">💀</span>
+                        <h3>Murder Hornet</h3>
+                    </div>
+                    <p class="role-description">You must kill everyone to win. You attack someone every night with a powerful attack.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Neutral Killing</p>
+                        <p><strong>Ability:</strong> Serial Kill (Powerful Attack)</p>
+                        <p><strong>Win Condition:</strong> Be the last one standing</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🔥</span>
+                        <h3>Fire Ant</h3>
+                    </div>
+                    <p class="role-description">You can douse players with gasoline and ignite them all at once.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Neutral Killing</p>
+                        <p><strong>Ability:</strong> Arsonist (Douse + Ignite, Unstoppable Attack)</p>
+                        <p><strong>Win Condition:</strong> Be the last one standing</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🏴‍☠️</span>
+                        <h3>Pirate Beetle</h3>
+                    </div>
+                    <p class="role-description">Challenge players to duels and win 2 times.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Neutral Killing</p>
+                        <p><strong>Ability:</strong> Pirate Duel</p>
+                        <p><strong>Win Condition:</strong> Win 2 duels</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="subteam-title">Neutral Evil</h3>
+            <div class="roles-grid">
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🤡</span>
+                        <h3>Clown Beetle</h3>
+                    </div>
+                    <p class="role-description">Your goal is to get yourself voted out during the day.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Neutral Evil</p>
+                        <p><strong>Ability:</strong> None</p>
+                        <p><strong>Win Condition:</strong> Get yourself lynched during the day</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🎯</span>
+                        <h3>Bounty Hunter</h3>
+                    </div>
+                    <p class="role-description">You have a target that you must get lynched.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Neutral Evil</p>
+                        <p><strong>Ability:</strong> None</p>
+                        <p><strong>Win Condition:</strong> Get your target lynched during the day</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🕷️</span>
+                        <h3>Spider</h3>
+                    </div>
+                    <p class="role-description">You can control players and make them target who you choose.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Neutral Evil</p>
+                        <p><strong>Ability:</strong> Witch Control</p>
+                        <p><strong>Win Condition:</strong> Live to see Bees or Wasps lose</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="subteam-title">Neutral Benign</h3>
+            <div class="roles-grid">
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🦋</span>
+                        <h3>Butterfly</h3>
+                    </div>
+                    <p class="role-description">You just want to survive. You have 4 vests that provide powerful defense.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Neutral Benign</p>
+                        <p><strong>Ability:</strong> Vest (4 uses, Powerful Defense)</p>
+                        <p><strong>Win Condition:</strong> Survive until the end</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🪲</span>
+                        <h3>Amnesiac Beetle</h3>
+                    </div>
+                    <p class="role-description">You can remember a dead player's role and join their team.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Neutral Benign</p>
+                        <p><strong>Ability:</strong> Remember (One-time use)</p>
+                        <p><strong>Win Condition:</strong> Remember a role and achieve that role's win condition</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🐜</span>
+                        <h3>Guardian Ant</h3>
+                    </div>
+                    <p class="role-description">You are assigned to protect one player.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Neutral Benign</p>
+                        <p><strong>Ability:</strong> Guardian Protection</p>
+                        <p><strong>Win Condition:</strong> Your target survives and wins</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">💕</span>
+                        <h3>Matchmaker Beetle</h3>
+                    </div>
+                    <p class="role-description">You are secretly linked with another player.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Neutral Benign</p>
+                        <p><strong>Ability:</strong> None</p>
+                        <p><strong>Win Condition:</strong> Your linked partner wins</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">🗣️</span>
+                        <h3>Gossip Beetle</h3>
+                    </div>
+                    <p class="role-description">You can send anonymous messages.</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Neutral Benign</p>
+                        <p><strong>Ability:</strong> Anonymous Messages</p>
+                        <p><strong>Win Condition:</strong> Survive until the end</p>
+                    </div>
+                </div>
+
+                <div class="role-card">
+                    <div class="role-header">
+                        <span class="role-emoji">💰</span>
+                        <h3>Mercenary</h3>
+                    </div>
+                    <p class="role-description">You have been hired by either the Bees or Wasps (50/50 chance).</p>
+                    <div class="role-details">
+                        <p><strong>Team:</strong> Neutral Benign</p>
+                        <p><strong>Ability:</strong> None</p>
+                        <p><strong>Win Condition:</strong> Your assigned team wins</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="cta-section">
+            <h2>Ready to try these roles?</h2>
+            <a href="game-mechanics.html" class="btn btn-primary">Learn Game Mechanics</a>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>Made with ❤️ and 🐝</p>
+            <p>Inspired by Town of Salem and classic Mafia/Werewolf games</p>
+            <div class="footer-links">
+                <a href="https://github.com/ChrisAtwell27/BeeMafia-Website" target="_blank">GitHub</a>
+                <span>•</span>
+                <a href="https://github.com/ChrisAtwell27/BeeMafia-Website/issues" target="_blank">Report Issues</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -23,39 +23,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: '**/package-lock.json'
-
-      - name: Install shared dependencies
-        run: |
-          cd shared
-          npm ci
-
-      - name: Install frontend dependencies
-        run: |
-          cd BeeMafia-Frontend
-          npm ci
-
-      - name: Build frontend
-        run: |
-          cd BeeMafia-Frontend
-          npm run build
-        env:
-          CI: false
-          REACT_APP_API_URL: ${{ vars.REACT_APP_API_URL || 'https://api.beemafia.com/api' }}
-          REACT_APP_SOCKET_URL: ${{ vars.REACT_APP_SOCKET_URL || 'https://api.beemafia.com' }}
-
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './BeeMafia-Frontend/build'
+          path: './docs'
 
   deploy:
     environment:
