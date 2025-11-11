@@ -26,6 +26,21 @@ function processNightActions(game) {
     const roleblocks = new Set(); // playerIds that are roleblocked
     const playerEvents = new Map(); // playerId -> [{type, message}] - track all events for each player
 
+    // Step 0: Process delayed guilt deaths (Soldier killed a Bee on previous night)
+    const deaths = [];
+    game.players.forEach(player => {
+        if (player.alive && player.guiltyUntil && player.guiltyUntil <= game.nightNumber) {
+            player.alive = false;
+            deaths.push({
+                playerId: player.id,
+                username: player.username,
+                reason: 'guilt'
+            });
+            delete player.guiltyUntil; // Clean up the flag
+            console.log(`💀 ${player.username} (Soldier) died of guilt for killing an innocent`);
+        }
+    });
+
     // Step 1: Process visits
     Object.entries(game.nightActions).forEach(([playerId, action]) => {
         if (action.target) {
@@ -80,14 +95,106 @@ function processNightActions(game) {
         }
     });
 
+    // Step 2.5: Process dusk actions (Jailer, Pirate, etc.)
+    // Dusk actions were submitted during the dusk phase and now take effect
+    if (game.duskActions) {
+        Object.entries(game.duskActions).forEach(([playerId, action]) => {
+            const player = game.players.find(p => p.id === playerId);
+            if (!player || !player.alive) return;
+
+            // Jail action - can't be roleblocked (Jailer always jails)
+            if (action.action === 'jail' && action.target) {
+                roleblocks.add(action.target);
+                protections.set(action.target, 3); // Invincible in jail
+
+                // Track who is jailed for this night (for execution)
+                player.jailedPlayer = action.target;
+
+                // Track jail event with message
+                addPlayerEvent(playerEvents, action.target, {
+                    type: 'jailed',
+                    message: 'You were detained last night'
+                });
+                console.log(`⛓️ ${player.username} jailed ${game.players.find(p => p.id === action.target)?.username}`);
+            }
+
+            // Pirate duel - rock paper scissors game with outcomes
+            if (action.action === 'pirate_duel' && action.target) {
+                const targetPlayer = game.players.find(p => p.id === action.target);
+                const pirateChoice = action.rpsChoice;
+
+                // Check if target responded to RPS challenge
+                const rpsData = game.rpsResponses && game.rpsResponses[action.target];
+                const targetChoice = rpsData && rpsData.responded ? rpsData.targetChoice : null;
+
+                // Helper function to determine RPS winner
+                // Returns: 'pirate', 'target', or 'tie'
+                const determineWinner = (pirate, target) => {
+                    if (!target) return 'pirate'; // Target didn't respond, pirate wins
+                    if (pirate === target) return 'tie';
+                    if (
+                        (pirate === 'rock' && target === 'scissors') ||
+                        (pirate === 'scissors' && target === 'paper') ||
+                        (pirate === 'paper' && target === 'rock')
+                    ) {
+                        return 'pirate';
+                    }
+                    return 'target';
+                };
+
+                const result = determineWinner(pirateChoice, targetChoice);
+
+                if (result === 'pirate') {
+                    // Pirate wins - attack target with power 1
+                    if (!attacks.has(action.target)) attacks.set(action.target, []);
+                    attacks.get(action.target).push({ attackerId: playerId, attack: 1 });
+
+                    addPlayerEvent(playerEvents, playerId, {
+                        type: 'pirate_win',
+                        message: `You won the duel! (${pirateChoice} vs ${targetChoice || 'no response'}) Your target was attacked.`
+                    });
+
+                    console.log(`🏴‍☠️ ${player.username} won duel against ${targetPlayer?.username} (${pirateChoice} vs ${targetChoice || 'no response'})`);
+
+                    // Increment duelsWon
+                    player.duelsWon = (player.duelsWon || 0) + 1;
+                } else if (result === 'tie') {
+                    // Tie - roleblock target
+                    roleblocks.add(action.target);
+
+                    addPlayerEvent(playerEvents, playerId, {
+                        type: 'pirate_tie',
+                        message: `The duel was a tie! (${pirateChoice} vs ${targetChoice}) Your target was roleblocked.`
+                    });
+
+                    addPlayerEvent(playerEvents, action.target, { type: 'roleblocked' });
+
+                    console.log(`🏴‍☠️ ${player.username} tied duel with ${targetPlayer?.username} (${pirateChoice} vs ${targetChoice})`);
+                } else {
+                    // Target wins - no effect
+                    addPlayerEvent(playerEvents, playerId, {
+                        type: 'pirate_loss',
+                        message: `You lost the duel. (${pirateChoice} vs ${targetChoice}) Your target was not affected.`
+                    });
+
+                    addPlayerEvent(playerEvents, action.target, {
+                        type: 'pirate_defended',
+                        message: `You won the pirate duel! (${targetChoice} vs ${pirateChoice}) You were not affected.`
+                    });
+
+                    console.log(`🏴‍☠️ ${player.username} lost duel against ${targetPlayer?.username} (${pirateChoice} vs ${targetChoice})`);
+                }
+            }
+        });
+    }
+
     // Step 3: Process protections and heals (affected by roleblock, except jail)
     Object.entries(game.nightActions).forEach(([playerId, action]) => {
         const player = game.players.find(p => p.id === playerId);
         if (!player) return;
 
-        // Jail is special - it can't be roleblocked (jailor still jails even if roleblocked)
-        // But heal, guard, vest CAN be roleblocked
-        if (action.action !== 'jail' && roleblocks.has(playerId)) return;
+        // Skip if roleblocked
+        if (roleblocks.has(playerId)) return;
 
         if (action.action === 'heal' && action.target) {
             healers.set(action.target, playerId);
@@ -113,13 +220,6 @@ function processNightActions(game) {
             if (player.vests > 0) player.vests--;
             // Track self-protection event
             addPlayerEvent(playerEvents, playerId, { type: 'protected' });
-        }
-
-        if (action.action === 'jail' && action.target) {
-            roleblocks.add(action.target);
-            protections.set(action.target, 3); // Invincible in jail
-            // Track jail event
-            addPlayerEvent(playerEvents, action.target, { type: 'jailed' });
         }
     });
 
@@ -153,6 +253,42 @@ function processNightActions(game) {
                 if (!attacks.has(target)) attacks.set(target, []);
                 attacks.get(target).push({ attackerId: playerId, attack: roleInfo.attack || 1 });
                 player.bullets--;
+            }
+        }
+
+        // Execute action - Jailer executes their jailed prisoner
+        if (action.action === 'execute') {
+            // Check if Jailer has a jailed player
+            if (player.jailedPlayer && player.executions > 0) {
+                const jailedTarget = player.jailedPlayer;
+                const targetPlayer = game.players.find(p => p.id === jailedTarget);
+
+                // Unstoppable attack (power 3)
+                if (!attacks.has(jailedTarget)) attacks.set(jailedTarget, []);
+                attacks.get(jailedTarget).push({ attackerId: playerId, attack: 3 });
+
+                // Decrement executions
+                player.executions--;
+
+                // Clear jailed player
+                player.jailedPlayer = null;
+
+                addPlayerEvent(playerEvents, playerId, {
+                    type: 'executed',
+                    message: `You executed ${targetPlayer?.username}! (${player.executions} executions remaining)`
+                });
+
+                console.log(`⚔️ ${player.username} executed ${targetPlayer?.username} (${player.executions} executions left)`);
+            } else if (!player.jailedPlayer) {
+                addPlayerEvent(playerEvents, playerId, {
+                    type: 'execute_failed',
+                    message: 'You have no prisoner to execute!'
+                });
+            } else if (player.executions === 0) {
+                addPlayerEvent(playerEvents, playerId, {
+                    type: 'execute_failed',
+                    message: 'You have no executions remaining!'
+                });
             }
         }
 
@@ -210,7 +346,6 @@ function processNightActions(game) {
     });
 
     // Step 5: Resolve attacks vs defenses (using Discord bot's attack/defense system)
-    const deaths = [];
     attacks.forEach((attackList, targetId) => {
         const target = game.players.find(p => p.id === targetId);
         if (!target || !target.alive) return;
@@ -253,17 +388,20 @@ function processNightActions(game) {
             // Track death event
             addPlayerEvent(playerEvents, targetId, { type: 'killed', reason: 'killed', killedBy: killedBy });
 
-            // Check if Soldier killed a Bee (guilt mechanic)
+            // Check if Soldier killed a Bee (guilt mechanic - dies 1 night later)
             attackList.forEach(attacker => {
                 const attackerPlayer = game.players.find(p => p.id === attacker.attackerId);
                 if (attackerPlayer && attackerPlayer.role === 'SOLDIER_BEE') {
                     const targetTeam = getPlayerTeam(target);
                     if (targetTeam === 'bee') {
-                        attackerPlayer.alive = false;
-                        deaths.push({
-                            playerId: attackerPlayer.id,
-                            username: attackerPlayer.username,
-                            reason: 'guilt'
+                        // Mark Soldier to die of guilt on the NEXT night
+                        attackerPlayer.guiltyUntil = game.nightNumber + 1;
+                        console.log(`💀 ${attackerPlayer.username} (Soldier) will die of guilt on Night ${game.nightNumber + 1}`);
+
+                        // Notify the Soldier that they killed an innocent
+                        addPlayerEvent(playerEvents, attackerPlayer.id, {
+                            type: 'guilt',
+                            message: 'You killed an innocent Bee! You will die of guilt tomorrow night.'
                         });
                     }
                 }

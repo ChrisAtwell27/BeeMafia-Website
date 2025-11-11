@@ -75,6 +75,25 @@ function initializeSocketHandlers(io) {
             gameManager.autoAddRolesToConfig(socket, io, data);
         });
 
+        // Player role assignment events
+        socket.on('assign_role', (data) => {
+            gameManager.assignPlayerRole(socket, io, data);
+        });
+
+        socket.on('clear_role_assignments', (data) => {
+            gameManager.clearRoleAssignments(socket, io, data);
+        });
+
+        // Submit dusk action
+        socket.on('dusk_action', (data) => {
+            gameManager.submitDuskAction(socket, io, data);
+        });
+
+        // Submit RPS response (for pirate duel)
+        socket.on('rps_response', (data) => {
+            gameManager.submitRPSResponse(socket, io, data);
+        });
+
         // Submit night action
         socket.on('night_action', (data) => {
             gameManager.submitNightAction(socket, io, data);

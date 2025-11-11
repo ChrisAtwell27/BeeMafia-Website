@@ -6,7 +6,6 @@ function NewsSection() {
     const { socket } = useSocket();
     const [announcements, setAnnouncements] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
 
     useEffect(() => {
         // Fetch announcements from API
@@ -37,7 +36,6 @@ function NewsSection() {
             setLoading(false);
         } catch (err) {
             console.error('Error fetching announcements:', err);
-            setError('Failed to load announcements');
             setLoading(false);
             // Set default announcement if fetch fails
             setAnnouncements([

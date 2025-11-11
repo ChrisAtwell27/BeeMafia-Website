@@ -8,6 +8,19 @@ function NightActionPanel({ role, targets, gameId, socket }) {
   const [selectedTarget2, setSelectedTarget2] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
+  // Check if player is jailed (roleblocked)
+  if (role.isJailed) {
+    return (
+      <div className="night-action-panel no-action">
+        <div className="no-action-content">
+          <span className="no-action-icon">⛓️</span>
+          <h3>ROLEBLOCKED</h3>
+          <p>You have been jailed! Your action has been blocked for tonight.</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!role.nightAction) {
     return (
       <div className="night-action-panel no-action">
@@ -60,8 +73,8 @@ function NightActionPanel({ role, targets, gameId, socket }) {
       target2: selectedTarget2
     });
 
+    toast.success(submitted ? 'Action changed!' : 'Action submitted!');
     setSubmitted(true);
-    toast.success('Action submitted!');
   };
 
   return (
@@ -77,14 +90,36 @@ function NightActionPanel({ role, targets, gameId, socket }) {
 
       {needsNoTargets ? (
         <div className="self-action">
-          <button onClick={handleSubmit} disabled={submitted} className="btn-action btn-primary">
-            {submitted ? '✓ Action Submitted' : `Use Ability`}
+          {/* Special handling for execute ability */}
+          {abilityId === 'execute' && (
+            <>
+              {role.jailedPlayer ? (
+                <div className="jailed-player-info">
+                  <p className="jailed-label">Your Prisoner:</p>
+                  <p className="jailed-name">{role.jailedPlayerName || 'Unknown'}</p>
+                </div>
+              ) : (
+                <p className="no-prisoner">You have no prisoner to execute.</p>
+              )}
+            </>
+          )}
+
+          <button
+            onClick={handleSubmit}
+            className="btn-action btn-primary"
+            disabled={abilityId === 'execute' && !role.jailedPlayer}
+          >
+            {submitted ? '✓ Action Submitted' : (abilityId === 'execute' ? 'Execute Prisoner' : 'Use Ability')}
           </button>
-          {(role.vests || role.alerts) && (
+          {(role.vests || role.alerts || role.executions) && (
             <p className="uses-remaining">
               {role.vests && `${role.vests} uses remaining`}
               {role.alerts && `${role.alerts} uses remaining`}
+              {role.executions !== undefined && `${role.executions} executions remaining`}
             </p>
+          )}
+          {submitted && (
+            <p className="action-confirmation">Your action has been submitted (you can change it)</p>
           )}
         </div>
       ) : (
@@ -97,7 +132,6 @@ function NightActionPanel({ role, targets, gameId, socket }) {
               id="target-select"
               value={selectedTarget}
               onChange={(e) => setSelectedTarget(e.target.value)}
-              disabled={submitted}
               className="target-dropdown"
             >
               <option value="">-- Select a player --</option>
@@ -118,7 +152,6 @@ function NightActionPanel({ role, targets, gameId, socket }) {
                 id="target2-select"
                 value={selectedTarget2}
                 onChange={(e) => setSelectedTarget2(e.target.value)}
-                disabled={submitted}
                 className="target-dropdown"
               >
                 <option value="">-- Select a player --</option>
@@ -133,14 +166,14 @@ function NightActionPanel({ role, targets, gameId, socket }) {
 
           <button
             onClick={handleSubmit}
-            disabled={submitted || !selectedTarget}
+            disabled={!selectedTarget}
             className="btn-action btn-primary"
           >
-            {submitted ? '✓ Action Submitted' : 'Submit Action'}
+            {submitted ? '✓ Action Submitted - Click to Change' : 'Submit Action'}
           </button>
 
           {submitted && (
-            <p className="action-confirmation">Your action has been submitted and will be processed at the end of the night.</p>
+            <p className="action-confirmation">Your action has been submitted and will be processed at the end of the night. You can change your target before the night ends.</p>
           )}
         </>
       )}

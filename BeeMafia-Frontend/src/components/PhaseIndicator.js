@@ -11,6 +11,24 @@ function PhaseIndicator({ phase, myRole, timer, nightNumber }) {
           icon: '⏳',
           color: '#94a3b8'
         };
+      case 'setup':
+        return {
+          title: 'Setup Phase',
+          description: myRole?.duskAction
+            ? '🌅 Game is starting! Use your dawn ability and prepare your strategy.'
+            : '🌅 Game is starting! Check your role and prepare your strategy.',
+          icon: '🌅',
+          color: '#f97316'
+        };
+      case 'dusk':
+        return {
+          title: 'Dusk',
+          description: myRole?.duskAction
+            ? '🌅 Use your dusk ability below. Select your target before night falls!'
+            : '🌅 You have no dusk action. Wait for night to begin...',
+          icon: '🌅',
+          color: '#ea580c'
+        };
       case 'night':
         return {
           title: `Night ${nightNumber}`,

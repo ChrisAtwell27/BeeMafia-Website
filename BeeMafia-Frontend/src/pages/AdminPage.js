@@ -23,6 +23,7 @@ function AdminPage() {
             setIsAuthenticated(true);
             fetchAllAnnouncements(storedKey);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleAuth = (e) => {

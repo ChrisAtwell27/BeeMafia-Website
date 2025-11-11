@@ -324,15 +324,30 @@ const ABILITIES = {
     id: 'jail',
     name: 'Jail',
     category: ABILITY_CATEGORY.DISRUPT,
-    description: 'Protect and roleblock a player, can execute',
+    description: 'Protect and roleblock a player (Dusk action)',
     targetType: TARGET_TYPE.SINGLE,
+    phase: 'dusk', // This ability is used during dusk
     icon: '⛓️',
     config: {
-      unlimited: { type: 'boolean', default: true },
+      unlimited: { type: 'boolean', default: true }
+    },
+    getInstruction: (config) => 'Select a player to jail. They will be protected but roleblocked',
+    priority: 5
+  },
+
+  execute: {
+    id: 'execute',
+    name: 'Execute',
+    category: ABILITY_CATEGORY.ATTACK,
+    description: 'Execute your jailed prisoner with unstoppable attack',
+    targetType: TARGET_TYPE.NONE, // No target selection - automatically executes jailed player
+    phase: 'night', // This ability is used during night
+    icon: '⚔️',
+    config: {
       executions: { type: 'number', default: 3, min: 0, max: 10, description: 'Execution charges' }
     },
-    getInstruction: (config) => `Select a player to jail. They will be protected but roleblocked (${config.executions || 0} executions remaining)`,
-    priority: 5
+    getInstruction: (config) => `Choose to execute your jailed prisoner (${config.executions || 0} executions remaining)`,
+    priority: 3 // Execute before most protections but after jail
   },
 
   blackmail: {
@@ -549,6 +564,7 @@ const ABILITIES = {
     category: ABILITY_CATEGORY.DISRUPT,
     description: 'Challenge a player to a duel (rock-paper-scissors)',
     targetType: TARGET_TYPE.SINGLE,
+    phase: 'dusk', // This ability is used during dusk
     icon: '🏴‍☠️',
     config: {
       unlimited: { type: 'boolean', default: true },

@@ -10,7 +10,7 @@ function VotingPanel({ targets, gameId, socket, isModal = false, onVoteSubmit })
     socket.emit('vote', { target: targetId });
     setSelectedVote(targetId);
     setVoted(true);
-    toast.success('Vote submitted!');
+    toast.success(voted ? 'Vote changed!' : 'Vote submitted!');
 
     // Call callback if provided (for modal)
     if (onVoteSubmit) {
@@ -28,7 +28,6 @@ function VotingPanel({ targets, gameId, socket, isModal = false, onVoteSubmit })
           <button
             key={target.id}
             onClick={() => handleVote(target.id)}
-            disabled={voted}
             className={`vote-button ${selectedVote === target.id ? 'selected' : ''}`}
           >
             {target.username}
@@ -36,14 +35,13 @@ function VotingPanel({ targets, gameId, socket, isModal = false, onVoteSubmit })
         ))}
         <button
           onClick={() => handleVote('skip')}
-          disabled={voted}
           className={`vote-button skip-button ${selectedVote === 'skip' ? 'selected' : ''}`}
         >
           Skip Vote
         </button>
       </div>
 
-      {voted && <p className="voted-message">✓ Your vote has been recorded</p>}
+      {voted && <p className="voted-message">✓ Your vote has been recorded (you can change it)</p>}
     </>
   );
 

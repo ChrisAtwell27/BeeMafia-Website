@@ -64,6 +64,7 @@ function RoleBuilder() {
     }
 
     fetchCustomRoles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, navigate]);
 
   const fetchCustomRoles = async () => {

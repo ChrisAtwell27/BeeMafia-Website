@@ -6,6 +6,7 @@
 const { createGame: createGameState, getGame, deleteGame, clearNightData, clearVotes } = require('../../../shared/game/gameState');
 const { getRoleDistribution, shuffleArray, initializePlayerRole, checkWinConditions, determineWinners, getTeamCounts, countVotes, getGameConstants } = require('../../../shared/game/gameUtils');
 const { ROLES } = require('../../../shared/roles');
+const { ABILITIES } = require('../../../shared/game/abilities');
 const { RANDOM_ROLE_POOLS, resolveRandomRole } = require('../../../shared/game/roleCategories');
 const { getPresetDistribution } = require('../../../shared/game/presets');
 const { activePlayers, activeGameRooms, updateLobby } = require('./lobbyManager');
@@ -41,6 +42,8 @@ function getPhaseDuration(game, phase) {
     switch(phase) {
         case 'setup':
             return constants.SETUP_DELAY;
+        case 'dusk':
+            return constants.DUSK_DURATION;
         case 'night':
             return constants.NIGHT_DURATION;
         case 'day':
@@ -233,6 +236,47 @@ function performBotNightActions(game) {
             };
 
             console.log(`🤖 Bot ${bot.username} (${roleInfo.name}) targeting ${target.username || 'self'}`);
+        }
+    });
+}
+
+function performBotDuskActions(game) {
+    const alivePlayers = game.players.filter(p => p.alive);
+    const bots = alivePlayers.filter(p => p.isBot);
+
+    bots.forEach(bot => {
+        const roleInfo = ROLES[bot.role];
+        if (!roleInfo || !roleInfo.duskAction) return;
+
+        const validTargets = alivePlayers.filter(p => p.id !== bot.id);
+        if (validTargets.length === 0) return;
+
+        let target = null;
+
+        // Handle dusk action types
+        switch (roleInfo.actionType) {
+            case 'jail':
+                // Jailer prioritizes suspicious players or random
+                target = validTargets[Math.floor(Math.random() * validTargets.length)];
+                break;
+
+            case 'pirate_duel':
+                // Pirate targets random player for duel
+                target = validTargets[Math.floor(Math.random() * validTargets.length)];
+                break;
+
+            default:
+                // Default random targeting for any future dusk roles
+                target = validTargets[Math.floor(Math.random() * validTargets.length)];
+        }
+
+        if (target) {
+            game.duskActions[bot.id] = {
+                action: roleInfo.actionType,
+                target: target.id
+            };
+
+            console.log(`🤖 Bot ${bot.username} (${roleInfo.name}) targeting ${target.username} at dusk`);
         }
     });
 }
@@ -676,7 +720,8 @@ function createGame(socket, io, data) {
         roomCode,
         status: 'waiting', // waiting, starting, playing, finished
         createdAt: Date.now(),
-        customRoles: gameMode === 'custom' ? getDefaultRoleConfig(1) : [] // Initialize with default role for first player
+        customRoles: gameMode === 'custom' ? getDefaultRoleConfig(1) : [], // Initialize with default role for first player
+        playerRoleAssignments: {} // Map of playerId -> roleKey for manual role assignments
     };
 
     activeGameRooms.set(gameId, gameRoom);
@@ -956,20 +1001,70 @@ function startGame(socket, io, data) {
         return roleKey;
     });
 
-    // Shuffle and assign roles
-    const shuffledRoles = shuffleArray(roleDistribution);
-    const gamePlayers = gameRoom.players.map((p, index) => {
-        const player = {
-            id: p.id,
-            username: p.username,
-            socketId: p.socketId,
-            alive: true,
-            role: null,
-            isBot: p.isBot || false
-        };
-        initializePlayerRole(player, shuffledRoles[index]);
-        return player;
-    });
+    // Check if we have custom player role assignments
+    const hasCustomAssignments = gameRoom.playerRoleAssignments && Object.keys(gameRoom.playerRoleAssignments).length > 0;
+
+    let gamePlayers;
+
+    if (hasCustomAssignments) {
+        // Use a mix of assigned roles and random roles
+        const assignedPlayerIds = Object.keys(gameRoom.playerRoleAssignments);
+        const unassignedPlayers = gameRoom.players.filter(p => !assignedPlayerIds.includes(p.id));
+
+        // Get roles for unassigned players from the distribution
+        const availableRoles = shuffleArray([...roleDistribution]);
+
+        // Remove already-assigned roles from the available pool
+        assignedPlayerIds.forEach(playerId => {
+            const assignedRole = gameRoom.playerRoleAssignments[playerId];
+            const roleIndex = availableRoles.indexOf(assignedRole);
+            if (roleIndex !== -1) {
+                availableRoles.splice(roleIndex, 1);
+            }
+        });
+
+        // Build the player list with assigned and random roles
+        gamePlayers = gameRoom.players.map((p) => {
+            const player = {
+                id: p.id,
+                username: p.username,
+                socketId: p.socketId,
+                alive: true,
+                role: null,
+                isBot: p.isBot || false
+            };
+
+            // Check if this player has an assigned role
+            if (gameRoom.playerRoleAssignments[p.id]) {
+                initializePlayerRole(player, gameRoom.playerRoleAssignments[p.id]);
+                console.log(`🎭 ${p.username} assigned pre-selected role: ${ROLES[gameRoom.playerRoleAssignments[p.id]].name}`);
+            } else {
+                // Assign a random role from available roles
+                const randomRole = availableRoles.shift();
+                initializePlayerRole(player, randomRole);
+                console.log(`🎲 ${p.username} assigned random role: ${ROLES[randomRole].name}`);
+            }
+
+            return player;
+        });
+
+        console.log(`🎭 Game started with ${assignedPlayerIds.length} custom role assignments`);
+    } else {
+        // Standard random role assignment
+        const shuffledRoles = shuffleArray(roleDistribution);
+        gamePlayers = gameRoom.players.map((p, index) => {
+            const player = {
+                id: p.id,
+                username: p.username,
+                socketId: p.socketId,
+                alive: true,
+                role: null,
+                isBot: p.isBot || false
+            };
+            initializePlayerRole(player, shuffledRoles[index]);
+            return player;
+        });
+    }
 
     // Create game state
     const game = createGameState(
@@ -1022,19 +1117,20 @@ function startGame(socket, io, data) {
                         description: roleInfo.description,
                         abilities: roleInfo.abilities || [],
                         winCondition: roleInfo.winCondition || 'Win with your team',
+                        duskAction: roleInfo.duskAction || false,
                         nightAction: roleInfo.nightAction || false,
                         actionType: roleInfo.actionType,
                         attack: roleInfo.attack,
                         defense: roleInfo.defense,
-                        bullets: roleInfo.bullets,
-                        vests: roleInfo.vests,
-                        alerts: roleInfo.alerts,
-                        selfHealsLeft: roleInfo.selfHealsLeft,
-                        executions: roleInfo.executions,
-                        cleans: roleInfo.cleans,
-                        disguises: roleInfo.disguises,
-                        mimics: roleInfo.mimics,
-                        silences: roleInfo.silences,
+                        bullets: player.bullets !== undefined ? player.bullets : roleInfo.bullets,
+                        vests: player.vests !== undefined ? player.vests : roleInfo.vests,
+                        alerts: player.alerts !== undefined ? player.alerts : roleInfo.alerts,
+                        selfHealsLeft: player.selfHealsLeft !== undefined ? player.selfHealsLeft : roleInfo.selfHealsLeft,
+                        executions: player.executions !== undefined ? player.executions : roleInfo.executions,
+                        cleans: player.cleans !== undefined ? player.cleans : roleInfo.cleans,
+                        disguises: player.disguises !== undefined ? player.disguises : roleInfo.disguises,
+                        mimics: player.mimics !== undefined ? player.mimics : roleInfo.mimics,
+                        silences: player.silences !== undefined ? player.silences : roleInfo.silences,
                         teamMembers: teamMembers
                     });
                 } else {
@@ -1050,12 +1146,89 @@ function startGame(socket, io, data) {
         message: 'Game starting! Check your role...'
     });
 
+    // Send a system message if custom role assignments were used
+    if (hasCustomAssignments) {
+        const assignedCount = Object.keys(gameRoom.playerRoleAssignments).length;
+        io.to(gameId).emit('chat_message', {
+            userId: 'system',
+            username: 'System',
+            message: `⚠️ This game was started with ${assignedCount} custom role assignment${assignedCount > 1 ? 's' : ''}. Some roles were manually assigned by the host.`,
+            timestamp: Date.now(),
+            type: 'system'
+        });
+    }
+
     // Transition to night after setup delay
     setTimeout(() => {
         startNightPhase(io, gameId);
     }, getPhaseDuration(game, 'setup'));
 
     console.log(`Game started: ${gameId} with ${gamePlayers.length} players`);
+}
+
+function startDuskPhase(io, gameId) {
+    const game = getGame(gameId);
+    if (!game) return;
+
+    game.phase = 'dusk';
+
+    // Clear and initialize dusk actions storage for fresh state
+    game.duskActions = {};
+
+    const alivePlayers = game.players.filter(p => p.alive);
+
+    io.to(gameId).emit('phase_changed', {
+        phase: 'dusk',
+        players: game.players.map(p => ({ id: p.id, username: p.username, alive: p.alive !== false, isBot: p.isBot })),
+        alivePlayers: alivePlayers.map(p => ({ id: p.id, username: p.username })),
+        duration: getPhaseDuration(game, 'dusk') / 1000,
+        message: 'Dusk has fallen... Certain roles may now act.'
+    });
+
+    // Request dusk actions from players with duskAction roles
+    game.players.forEach(player => {
+        if (!player.alive || player.isBot) return;
+
+        const roleInfo = ROLES[player.role];
+        if (!roleInfo || !roleInfo.duskAction) return;
+
+        const socket = io.sockets.sockets.get(player.socketId);
+        if (socket) {
+            // Find the dusk ability (for roles with multiple abilities)
+            let duskActionType = roleInfo.actionType; // Default to first ability
+            if (roleInfo.abilities && roleInfo.abilities.length > 0) {
+                const duskAbility = roleInfo.abilities.find(ab => {
+                    const abilityId = typeof ab === 'string' ? ab : ab.id;
+                    const abilityDef = ABILITIES[abilityId];
+                    return abilityDef && abilityDef.phase === 'dusk';
+                });
+                if (duskAbility) {
+                    duskActionType = typeof duskAbility === 'string' ? duskAbility : duskAbility.id;
+                }
+            }
+
+            socket.emit('request_dusk_action', {
+                actionType: duskActionType,
+                availableTargets: game.players
+                    .filter(p => p.alive && p.id !== player.id)
+                    .map(p => ({ id: p.id, username: p.username }))
+            });
+        }
+    });
+
+    // Bots perform dusk actions after a short delay
+    setTimeout(() => {
+        const currentGame = getGame(gameId);
+        if (!currentGame) return;
+        performBotDuskActions(currentGame);
+    }, 500);
+
+    console.log(`🌆 Dusk phase started for game ${gameId}`);
+
+    // Transition to night after dusk duration
+    setTimeout(() => {
+        startNightPhase(io, gameId);
+    }, getPhaseDuration(game, 'dusk'));
 }
 
 function startNightPhase(io, gameId) {
@@ -1089,6 +1262,11 @@ function startNightPhase(io, gameId) {
         if (player.alive && !player.isBot) {
             const roleInfo = ROLES[player.role];
 
+            // Check if player is jailed (roleblocked)
+            const isJailed = game.duskActions && Object.values(game.duskActions).some(
+                action => action.action === 'jail' && action.target === player.id
+            );
+
             // Werebee only acts on full moon nights
             if (roleInfo.nightAction) {
                 if (player.role === 'WEREBEE' && !game.isFullMoon) {
@@ -1097,16 +1275,85 @@ function startNightPhase(io, gameId) {
 
                 const socket = io.sockets.sockets.get(player.socketId);
                 if (socket) {
-                    socket.emit('request_night_action', {
-                        actionType: roleInfo.actionType,
+                    // Find the night ability (for roles with multiple abilities)
+                    let nightActionType = roleInfo.actionType; // Default to first ability
+                    if (roleInfo.abilities && roleInfo.abilities.length > 0) {
+                        const nightAbility = roleInfo.abilities.find(ab => {
+                            const abilityId = typeof ab === 'string' ? ab : ab.id;
+                            const abilityDef = ABILITIES[abilityId];
+                            return abilityDef && abilityDef.phase === 'night';
+                        });
+                        if (nightAbility) {
+                            nightActionType = typeof nightAbility === 'string' ? nightAbility : nightAbility.id;
+                        }
+                    }
+
+                    const actionData = {
+                        actionType: nightActionType,
                         availableTargets: game.players
                             .filter(p => p.alive && p.id !== player.id)
-                            .map(p => ({ id: p.id, username: p.username }))
-                    });
+                            .map(p => ({ id: p.id, username: p.username })),
+                        isJailed: isJailed // Flag if player is roleblocked by jail
+                    };
+
+                    // For Jailer with execute ability, include jailed player info
+                    if (player.jailedPlayer) {
+                        const jailedPlayerData = game.players.find(p => p.id === player.jailedPlayer);
+                        actionData.jailedPlayer = player.jailedPlayer;
+                        actionData.jailedPlayerName = jailedPlayerData ? jailedPlayerData.username : 'Unknown';
+                    }
+
+                    socket.emit('request_night_action', actionData);
                 }
             }
         }
     });
+
+    // Send notifications to players affected by dusk actions (after phase change notification)
+    setTimeout(() => {
+        // Send jail notifications
+        if (game.duskActions) {
+            Object.entries(game.duskActions).forEach(([jailerId, action]) => {
+                if (action.action === 'jail' && action.target) {
+                    const jailerPlayer = game.players.find(p => p.id === jailerId);
+                    const targetPlayer = game.players.find(p => p.id === action.target);
+
+                    if (targetPlayer && targetPlayer.socketId && !targetPlayer.isBot) {
+                        const targetSocket = io.sockets.sockets.get(targetPlayer.socketId);
+                        if (targetSocket) {
+                            targetSocket.emit('jail_notification', {
+                                jailerId: jailerId,
+                                jailerName: jailerPlayer ? jailerPlayer.username : 'Unknown'
+                            });
+                        }
+                    }
+                }
+
+                // Send RPS challenge notifications
+                if (action.action === 'pirate_duel' && action.target) {
+                    const piratePlayer = game.players.find(p => p.id === jailerId);
+                    const targetPlayer = game.players.find(p => p.id === action.target);
+
+                    console.log(`🏴‍☠️ Sending RPS challenge from ${piratePlayer?.username} to ${targetPlayer?.username}`);
+
+                    if (targetPlayer && targetPlayer.socketId && !targetPlayer.isBot) {
+                        const targetSocket = io.sockets.sockets.get(targetPlayer.socketId);
+                        if (targetSocket) {
+                            console.log(`✅ Emitting rps_challenge to ${targetPlayer.username}`);
+                            targetSocket.emit('rps_challenge', {
+                                challengerId: jailerId,
+                                challengerName: piratePlayer ? piratePlayer.username : 'Unknown'
+                            });
+                        } else {
+                            console.log(`❌ No socket found for ${targetPlayer.username}`);
+                        }
+                    } else {
+                        console.log(`❌ Target player check failed: isBot=${targetPlayer?.isBot}, hasSocketId=${!!targetPlayer?.socketId}`);
+                    }
+                }
+            });
+        }
+    }, 1500); // 1.5 second delay after phase notification
 
     // Bots perform actions after a short delay (simulate thinking)
     // In debug mode with instant transitions, bots act immediately
@@ -1391,9 +1638,20 @@ function processVotes(io, gameId) {
         return;
     }
 
-    // Start next night
+    // Check if there are any players with dusk actions
+    const hasDuskActions = game.players.some(p => {
+        if (!p.alive) return false;
+        const roleInfo = ROLES[p.role];
+        return roleInfo && roleInfo.duskAction === true;
+    });
+
+    // Transition to dusk if there are dusk action roles, otherwise go directly to night
     setTimeout(() => {
-        startNightPhase(io, gameId);
+        if (hasDuskActions) {
+            startDuskPhase(io, gameId);
+        } else {
+            startNightPhase(io, gameId);
+        }
     }, 5000);
 }
 
@@ -1471,6 +1729,85 @@ async function endGame(io, gameId, winCondition) {
     console.log(`Game ${gameId} ended. Waiting for host to return to lobby...`);
 }
 
+function submitDuskAction(socket, io, data) {
+    const player = activePlayers.get(socket.userId);
+    if (!player || !player.gameId) {
+        return socket.emit('error', { message: 'Not in a game' });
+    }
+
+    const game = getGame(player.gameId);
+    if (!game || (game.phase !== 'dusk' && game.phase !== 'setup')) {
+        return socket.emit('error', { message: 'Not in dusk or setup phase' });
+    }
+
+    const gamePlayer = game.players.find(p => p.id === socket.userId);
+    if (!gamePlayer || !gamePlayer.alive) {
+        return socket.emit('error', { message: 'Cannot submit action' });
+    }
+
+    // Verify player has a dusk action role
+    const roleInfo = ROLES[gamePlayer.role];
+    if (!roleInfo || !roleInfo.duskAction) {
+        return socket.emit('error', { message: 'You do not have a dusk action' });
+    }
+
+    // Store dusk action
+    game.duskActions[socket.userId] = {
+        action: data.action,
+        target: data.target,
+        rpsChoice: data.rpsChoice // For pirate duel
+    };
+
+    // Initialize RPS responses map for tracking (challenges sent when night starts)
+    if (data.action === 'pirate_duel' && data.target && data.rpsChoice) {
+        if (!game.rpsResponses) game.rpsResponses = {};
+        game.rpsResponses[data.target] = {
+            challengerId: socket.userId,
+            pirateChoice: data.rpsChoice,
+            targetChoice: null,
+            responded: false
+        };
+    }
+
+    socket.emit('action_submitted', { message: 'Dusk action submitted' });
+}
+
+function submitRPSResponse(socket, io, data) {
+    const player = activePlayers.get(socket.userId);
+    if (!player || !player.gameId) {
+        return socket.emit('error', { message: 'Not in a game' });
+    }
+
+    const game = getGame(player.gameId);
+    if (!game || game.phase !== 'night') {
+        return socket.emit('error', { message: 'Not in night phase' });
+    }
+
+    const gamePlayer = game.players.find(p => p.id === socket.userId);
+    if (!gamePlayer || !gamePlayer.alive) {
+        return socket.emit('error', { message: 'Cannot respond to challenge' });
+    }
+
+    // Check if player has a pending RPS challenge
+    if (!game.rpsResponses || !game.rpsResponses[socket.userId]) {
+        return socket.emit('error', { message: 'No pending RPS challenge' });
+    }
+
+    // Validate RPS choice
+    const validChoices = ['rock', 'paper', 'scissors'];
+    if (!data.choice || !validChoices.includes(data.choice)) {
+        return socket.emit('error', { message: 'Invalid RPS choice' });
+    }
+
+    // Store target's response
+    game.rpsResponses[socket.userId].targetChoice = data.choice;
+    game.rpsResponses[socket.userId].responded = true;
+
+    socket.emit('rps_response_submitted', { message: 'Response submitted!' });
+
+    console.log(`🏴‍☠️ ${gamePlayer.username} responded to pirate duel with ${data.choice}`);
+}
+
 function submitNightAction(socket, io, data) {
     const player = activePlayers.get(socket.userId);
     if (!player || !player.gameId) {
@@ -1504,6 +1841,17 @@ function submitNightAction(socket, io, data) {
         });
 
         return socket.emit('action_submitted', { message: 'Vote submitted' });
+    }
+
+    // Prevent Bodyguard from protecting themselves
+    if (data.action === 'guard' && data.target === socket.userId) {
+        return socket.emit('error', { message: 'You cannot protect yourself' });
+    }
+
+    // Prevent self-targeting for most actions (except self-only actions like vest, alert)
+    const selfTargetActions = ['vest', 'alert', 'clown_reveal'];
+    if (!selfTargetActions.includes(data.action) && data.target === socket.userId) {
+        return socket.emit('error', { message: 'You cannot target yourself' });
     }
 
     game.nightActions[socket.userId] = {
@@ -1573,50 +1921,44 @@ function handleChatMessage(socket, io, data) {
     const { message, channel = 'all' } = data;
     const role = ROLES[gamePlayer.role];
 
-    // Determine if player can send messages
-    // Living players can chat during day/voting
-    // Special roles can chat during night (wasps, zombees, masons, jailor)
-    // Dead players can always chat
-    let canSend = false;
+    // Determine visibility for the message
+    // All living players can chat at any time (smart text system)
+    // Messages are tagged with visibility for filtering on frontend
     let visibilityTag = null;
+    let jailData = null;
 
     if (!gamePlayer.alive) {
-        canSend = true;
         visibilityTag = 'dead';
-    } else if (game.phase === 'day' || game.phase === 'voting') {
-        canSend = true;
-        visibilityTag = null; // Everyone can see
-    } else if (game.phase === 'night') {
-        // Check if player has night chat privileges
-        if (role && role.team === 'wasp') {
-            canSend = true;
-            visibilityTag = 'wasp';
-        } else if (role && role.team === 'zombee') {
-            canSend = true;
-            visibilityTag = 'zombee';
-        } else if (role && (role.id === 'MASON_BEE' || role.id === 'mason')) {
-            canSend = true;
-            visibilityTag = 'mason';
-        } else if (role && role.id === 'jailor') {
-            canSend = true;
-            visibilityTag = 'jailor';
+    } else if (game.phase === 'night' || game.phase === 'dusk') {
+        // During night/dusk, determine special visibility tags
+        // Check jail status FIRST - it takes priority over team chat
+        if (gamePlayer.jailedPlayer) {
+            // This player is the jailer
+            visibilityTag = 'jail';
+            jailData = {
+                isJailer: true,
+                partnerId: gamePlayer.jailedPlayer
+            };
+        } else {
+            // Check if this player is jailed by someone
+            const jailer = game.players.find(p => p.jailedPlayer === gamePlayer.id);
+            if (jailer) {
+                visibilityTag = 'jail';
+                jailData = {
+                    isJailer: false,
+                    partnerId: jailer.id
+                };
+            } else {
+                // Not jailed, check team-based visibility
+                if (role && role.team === 'wasp') {
+                    visibilityTag = 'wasp';
+                } else if (role && role.team === 'zombee') {
+                    visibilityTag = 'zombee';
+                } else if (role && (role.id === 'MASON_BEE' || role.id === 'mason')) {
+                    visibilityTag = 'mason';
+                }
+            }
         }
-    }
-
-    // Check if mason can always chat
-    if (role && (role.id === 'MASON_BEE' || role.id === 'mason')) {
-        canSend = true;
-        visibilityTag = 'mason';
-    }
-
-    // Check if jailor can always chat
-    if (role && role.id === 'jailor') {
-        canSend = true;
-        visibilityTag = 'jailor';
-    }
-
-    if (!canSend) {
-        return socket.emit('error', { message: 'You cannot send messages at this time' });
     }
 
     // Create the chat message
@@ -1627,7 +1969,8 @@ function handleChatMessage(socket, io, data) {
         channel: 'all', // Everything goes to all channel
         timestamp: Date.now(),
         isDead: !gamePlayer.alive, // Tag if message is from a dead player
-        visibilityTag: visibilityTag // Tag for special visibility (wasp, zombee, mason, jailor)
+        visibilityTag: visibilityTag, // Tag for special visibility (wasp, zombee, mason, jail)
+        jailData: jailData // Information about jail partnership if applicable
     };
 
     // Send to all players in the game
@@ -1889,6 +2232,79 @@ function autoAddRolesToConfig(socket, io, data) {
     console.log(`🎭 ${socket.username} auto-added ${count} roles to game ${gameId}`);
 }
 
+function assignPlayerRole(socket, io, data) {
+    const { gameId, playerId, roleKey } = data;
+    const gameRoom = activeGameRooms.get(gameId);
+
+    if (!gameRoom) {
+        return socket.emit('error', { message: 'Game not found' });
+    }
+
+    if (gameRoom.hostId !== socket.userId) {
+        return socket.emit('error', { message: 'Only the host can assign roles' });
+    }
+
+    if (gameRoom.status !== 'waiting') {
+        return socket.emit('error', { message: 'Cannot assign roles after game has started' });
+    }
+
+    // Validate roleKey exists in ROLES
+    if (roleKey && !ROLES[roleKey]) {
+        return socket.emit('error', { message: 'Invalid role' });
+    }
+
+    // Validate player exists in game
+    const playerExists = gameRoom.players.find(p => p.id === playerId || p.userId === playerId);
+    if (!playerExists) {
+        return socket.emit('error', { message: 'Player not found in game' });
+    }
+
+    // Initialize playerRoleAssignments if it doesn't exist
+    if (!gameRoom.playerRoleAssignments) {
+        gameRoom.playerRoleAssignments = {};
+    }
+
+    // Assign or unassign role
+    if (roleKey) {
+        gameRoom.playerRoleAssignments[playerId] = roleKey;
+        console.log(`🎭 ${socket.username} assigned ${ROLES[roleKey].name} to ${playerExists.username}`);
+    } else {
+        delete gameRoom.playerRoleAssignments[playerId];
+        console.log(`🎭 ${socket.username} unassigned role from ${playerExists.username}`);
+    }
+
+    // Broadcast updated role assignments to all players in the game
+    io.to(gameId).emit('role_assignments_updated', {
+        playerRoleAssignments: gameRoom.playerRoleAssignments
+    });
+}
+
+function clearRoleAssignments(socket, io, data) {
+    const { gameId } = data;
+    const gameRoom = activeGameRooms.get(gameId);
+
+    if (!gameRoom) {
+        return socket.emit('error', { message: 'Game not found' });
+    }
+
+    if (gameRoom.hostId !== socket.userId) {
+        return socket.emit('error', { message: 'Only the host can clear role assignments' });
+    }
+
+    if (gameRoom.status !== 'waiting') {
+        return socket.emit('error', { message: 'Cannot clear roles after game has started' });
+    }
+
+    gameRoom.playerRoleAssignments = {};
+
+    // Broadcast cleared assignments
+    io.to(gameId).emit('role_assignments_updated', {
+        playerRoleAssignments: {}
+    });
+
+    console.log(`🎭 ${socket.username} cleared all role assignments in game ${gameId}`);
+}
+
 function returnToLobby(socket, io, data) {
     const { gameId } = data;
     const gameRoom = activeGameRooms.get(gameId);
@@ -1944,6 +2360,8 @@ module.exports = {
     toggleReady,
     startGame,
     addBots,
+    submitDuskAction,
+    submitRPSResponse,
     submitNightAction,
     submitVote,
     handleChatMessage,
@@ -1956,5 +2374,8 @@ module.exports = {
     addRoleToConfig,
     removeRoleFromConfig,
     replaceRoleInConfig,
-    autoAddRolesToConfig
+    autoAddRolesToConfig,
+    // Player role assignment handlers
+    assignPlayerRole,
+    clearRoleAssignments
 };

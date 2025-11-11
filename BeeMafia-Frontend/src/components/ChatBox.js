@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './ChatBox.css';
 
-function ChatBox({ gameId, socket, phase, myRole, gameEvents = [], isAlive = true }) {
+function ChatBox({ gameId, socket, phase, myRole, gameEvents = [], isAlive = true, myUserId }) {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [activeTab, setActiveTab] = useState('chat'); // chat or log
@@ -11,7 +11,7 @@ function ChatBox({ gameId, socket, phase, myRole, gameEvents = [], isAlive = tru
   const isZombee = myRole && myRole.team === 'zombee';
   const isDead = !isAlive;
   const isMason = myRole && myRole.id === 'mason';
-  const isJailor = myRole && myRole.id === 'jailor';
+  const isJailor = myRole && (myRole.id === 'JAILER_BEE' || myRole.id === 'jailer');
   const isMedium = myRole && (myRole.id === 'MEDIUM_BEE' || myRole.id === 'medium');
 
   // Generate consistent color for each player based on their username
@@ -86,9 +86,20 @@ function ChatBox({ gameId, socket, phase, myRole, gameEvents = [], isAlive = tru
         // Only masons can see mason messages
         return isMason;
 
-      case 'jailor':
-        // Jailor and jailed prisoner can see jailor messages
-        return isJailor; // TODO: add jailed player check
+      case 'jail':
+        // Jailor and jailed prisoner can see jail messages
+        // Check if this message involves the current player
+        if (msg.jailData && myUserId) {
+          // If I sent this message and I'm involved in jail
+          if (msg.userId === myUserId && msg.jailData.partnerId) {
+            return true;
+          }
+          // If someone sent this message and I'm their jail partner
+          if (msg.jailData.partnerId === myUserId) {
+            return true;
+          }
+        }
+        return false;
 
       default:
         return false;
@@ -137,15 +148,15 @@ function ChatBox({ gameId, socket, phase, myRole, gameEvents = [], isAlive = tru
       case 'wasp': return { emoji: '🦟', label: 'Wasp', color: '#ff6b6b' };
       case 'zombee': return { emoji: '🧟', label: 'Zombee', color: '#22c55e' };
       case 'dead': return { emoji: '👻', label: 'Dead', color: '#9ca3af' };
-      case 'jailor': return { emoji: '⛓️', label: 'Jailor', color: '#a78bfa' };
+      case 'jail': return { emoji: '⛓️', label: 'Jail', color: '#a78bfa' };
       case 'mason': return { emoji: '🔨', label: 'Mason', color: '#60a5fa' };
       default: return { emoji: '💬', label: 'All', color: '#cbd5e1' };
     }
   };
 
-  // Dead players can always chat in "all" channel (only dead players see their messages)
-  // Living players can chat during day/voting, or in special channels
-  const canChat = isDead || phase === 'day' || phase === 'voting' || (isWasp && phase === 'night') || (isZombee && phase === 'night') || (isMedium && phase === 'night') || isMason || isJailor;
+  // Smart text system: Everyone can always chat
+  // Messages are tagged with visibility on backend, filtered on frontend
+  const canChat = true;
 
   return (
     <div className="chat-box">
@@ -187,12 +198,23 @@ function ChatBox({ gameId, socket, phase, myRole, gameEvents = [], isAlive = tru
               const visibilityInfo = getVisibilityDisplay(item.visibilityTag);
               const usernameColor = getPlayerColor(item.username);
               const visibilityClass = item.visibilityTag ? `visibility-${item.visibilityTag}` : '';
+
+              // Anonymize jail chat - show "Jailer" or "Prisoner" instead of usernames
+              let displayName = item.username;
+              if (item.visibilityTag === 'jail' && item.jailData) {
+                if (item.jailData.isJailer) {
+                  displayName = 'Jailer';
+                } else {
+                  displayName = 'Prisoner';
+                }
+              }
+
               return (
                 <div key={`msg-${index}`} className={`chat-message ${visibilityClass}`}>
                   <span className="message-channel" style={{ color: visibilityInfo.color }}>
                     {visibilityInfo.emoji}
                   </span>
-                  <span className="message-username" style={{ color: usernameColor }}>{item.username}:</span>
+                  <span className="message-username" style={{ color: usernameColor }}>{displayName}:</span>
                   <span className="message-text">{item.message}</span>
                 </div>
               );

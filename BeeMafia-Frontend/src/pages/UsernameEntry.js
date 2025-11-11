@@ -10,7 +10,7 @@ function UsernameEntry() {
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [loginData, setLoginData] = useState({ username: '', password: '' });
   const [signupData, setSignupData] = useState({ username: '', email: '', password: '', confirmPassword: '' });
-  const { username, login, loginWithPassword, signup, isAuthenticated } = useAuth();
+  const { username, login, loginWithPassword, signup } = useAuth();
   const navigate = useNavigate();
 
   // If already has username, redirect to lobby

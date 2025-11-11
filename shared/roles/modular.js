@@ -139,12 +139,18 @@ const MODULAR_ROLES = {
       name: 'Jailer Bee',
       emoji: '⛓️',
       team: 'bee',
-      description: 'You are a **Jailer Bee**! You can jail one player each night, protecting them but preventing their actions. You can execute your jailed target.',
+      description: 'You are a **Jailer Bee**! During dusk, select a player to jail. They will be protected and roleblocked. During the night, you can talk with your prisoner and choose to execute them.',
       winCondition: 'Eliminate all Wasps and harmful Neutrals'
     },
     [
       {
         id: 'jail',
+        config: {
+          unlimited: true
+        }
+      },
+      {
+        id: 'execute',
         config: {
           executions: 3
         }

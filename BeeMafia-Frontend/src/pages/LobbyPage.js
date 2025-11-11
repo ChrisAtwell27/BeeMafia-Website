@@ -39,6 +39,7 @@ function LobbyPage() {
       // Auto-join room with code
       handleJoinWithCode(urlRoomCode);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location]);
 
   // Keyboard shortcuts
@@ -71,6 +72,7 @@ function LobbyPage() {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

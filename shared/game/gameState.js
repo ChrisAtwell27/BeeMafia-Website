@@ -40,6 +40,7 @@ function createGame(gameId, players, organizerId, options = {}) {
         players: players,
         phase: 'setup',
         phaseEndTime: null,
+        duskActions: {},
         nightActions: {},
         nightResults: [],
         visits: {},

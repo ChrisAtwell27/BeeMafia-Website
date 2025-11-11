@@ -5,7 +5,9 @@ import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import ChatBox from '../components/ChatBox';
 import PlayerList from '../components/PlayerList';
+import WaitingRoomPlayerList from '../components/WaitingRoomPlayerList';
 import RoleCard from '../components/RoleCard';
+import DuskActionPanel from '../components/DuskActionPanel';
 import NightActionPanel from '../components/NightActionPanel';
 import VotingPanel from '../components/VotingPanel';
 import PhaseIndicator from '../components/PhaseIndicator';
@@ -16,6 +18,8 @@ import NightEventNotification from '../components/NightEventNotification';
 import MorningSummary from '../components/MorningSummary';
 import PersonalMorningPopup from '../components/PersonalMorningPopup';
 import WinScreen from '../components/WinScreen';
+import RPSChallengeModal from '../components/RPSChallengeModal';
+import JailNotificationModal from '../components/JailNotificationModal';
 import './GamePage.css';
 
 function GamePage() {
@@ -46,6 +50,10 @@ function GamePage() {
   const [investigationResults, setInvestigationResults] = useState([]);
   const [showPersonalMorning, setShowPersonalMorning] = useState(false);
   const [personalMorningKey, setPersonalMorningKey] = useState(0);
+  const [playerRoleAssignments, setPlayerRoleAssignments] = useState({});
+  const [isPlayerDead, setIsPlayerDead] = useState(false);
+  const [rpsChallenge, setRpsChallenge] = useState(null); // {challengerId, challengerName}
+  const [jailNotification, setJailNotification] = useState(null); // {jailerId, jailerName}
 
   // Track shown night events to prevent duplicates
   const shownNightEventsRef = useRef(new Set());
@@ -98,6 +106,11 @@ function GamePage() {
         nightNumber: 0
       });
 
+      // Set role assignments if they exist
+      if (data.game.playerRoleAssignments) {
+        setPlayerRoleAssignments(data.game.playerRoleAssignments);
+      }
+
       // Set default phase durations based on debug mode
       if (isDebugMode) {
         setPhaseDurations({
@@ -141,6 +154,10 @@ function GamePage() {
       }));
     });
 
+    socket.on('role_assignments_updated', (data) => {
+      setPlayerRoleAssignments(data.playerRoleAssignments || {});
+    });
+
     socket.on('game_started', (data) => {
       setGameState((prev) => ({
         ...prev,
@@ -173,6 +190,16 @@ function GamePage() {
       setTimeout(() => setShowRole(false), 12000); // Hide after 12 seconds
     });
 
+    socket.on('request_night_action', (data) => {
+      // Update role with additional night action data (e.g., jailed player for Jailer, isJailed status)
+      setMyRole((prev) => ({
+        ...prev,
+        jailedPlayer: data.jailedPlayer,
+        jailedPlayerName: data.jailedPlayerName,
+        isJailed: data.isJailed
+      }));
+    });
+
     socket.on('phase_changed', (data) => {
       setGameState((prev) => ({
         ...prev,
@@ -184,6 +211,17 @@ function GamePage() {
         isFullMoon: data.isFullMoon || false
       }));
       setPhaseTimer(data.duration);
+
+      // Auto-close all popups when phase changes
+      setShowMorningSummary(false);
+      setShowPersonalMorning(false);
+      setShowVotingModal(false);
+
+      // Update player death status
+      const currentPlayer = data.players?.find(p => p.username === user?.username);
+      if (currentPlayer) {
+        setIsPlayerDead(currentPlayer.alive === false);
+      }
 
       // Clear shown night events when night starts (for new night's events)
       if (data.phase === 'night') {
@@ -299,6 +337,15 @@ function GamePage() {
           return;
         }
         hasSeenDeathNotification.current = true;
+
+        // Delay death notification until after phase notification (3 seconds)
+        setTimeout(() => {
+          setNightEvent(event);
+          setNightEventKey((prev) => prev + 1);
+          toast.error('💀 You died!', { autoClose: 5000 });
+          addEvent(event.type, getEventMessage(event));
+        }, 3000);
+        return;
       }
 
       // Check if we've shown this event type already this night
@@ -318,14 +365,21 @@ function GamePage() {
       shownNightEventsRef.current.add(eventType);
       lastEventTimestampRef.current[eventType] = now;
 
-      // Show notification popup
+      // Show notification popup (non-death events)
       setNightEvent(event);
       setNightEventKey((prev) => prev + 1);
 
+      // Add certain events to investigation results for morning popup
+      if (event.message && (event.type === 'jailed' || event.type === 'roleblocked')) {
+        setInvestigationResults(prev => [...prev, {
+          icon: event.type === 'jailed' ? '⛓️' : '🚫',
+          message: event.message,
+          type: event.type
+        }]);
+      }
+
       // Also show toast for important events
-      if (event.type === 'killed') {
-        toast.error('💀 You died!', { autoClose: 5000 });
-      } else if (event.type === 'poisoned') {
+      if (event.type === 'poisoned') {
         toast.error('☠️ You were poisoned! You will die in 2 nights unless healed.', { autoClose: 7000 });
       }
 
@@ -381,6 +435,25 @@ function GamePage() {
       addEvent('lobby_return', 'Game returned to lobby. Ready for next match!');
     });
 
+    socket.on('jail_notification', (data) => {
+      // Jailer has jailed this player
+      setJailNotification({
+        jailerId: data.jailerId,
+        jailerName: data.jailerName
+      });
+      toast.warning(`⛓️ You have been jailed by ${data.jailerName}!`);
+    });
+
+    socket.on('rps_challenge', (data) => {
+      // Pirate has challenged this player to a duel
+      console.log('🏴‍☠️ Received RPS challenge from:', data.challengerName, data);
+      setRpsChallenge({
+        challengerId: data.challengerId,
+        challengerName: data.challengerName
+      });
+      toast.warning(`🏴‍☠️ ${data.challengerName} has challenged you to a pirate duel!`);
+    });
+
     socket.on('error', (data) => {
       toast.error(data.message);
     });
@@ -429,26 +502,48 @@ function GamePage() {
   }, [phaseTimer]);
 
   // Handle morning popups when day phase starts and deaths/investigations are available
+  // Order: 1) Phase notification (3s) → 2) Death/Investigation (4.5s) → 3) Morning summary
   useEffect(() => {
     if (gameState.phase !== 'day' || lastNightDeaths === null) return;
 
-    // Show personal morning popup first if there are investigation results
-    if (investigationResults.length > 0 && !showPersonalMorning) {
-      const timer = setTimeout(() => {
-        setShowPersonalMorning(true);
-        setPersonalMorningKey(prev => prev + 1);
-      }, 4500); // Show after night events (which show for 4 seconds)
-      return () => clearTimeout(timer);
-    }
-    // If no investigation results, show morning summary directly
-    else if (investigationResults.length === 0 && !showMorningSummary && lastNightDeaths) {
-      const timer = setTimeout(() => {
+    const timers = [];
+
+    // Step 2: After phase notification (3s), show death notification OR personal investigation
+    if (isPlayerDead) {
+      // Player died - death notification will show via night_event
+      // Skip to morning summary after a delay
+      const summaryTimer = setTimeout(() => {
         setShowMorningSummary(true);
         setMorningSummaryKey(prev => prev + 1);
-      }, 4500);
-      return () => clearTimeout(timer);
+      }, 7500); // 3s phase notification + 4.5s for death notification
+      timers.push(summaryTimer);
+    } else if (investigationResults.length > 0) {
+      // Player alive with investigations - show personal morning popup
+      const personalTimer = setTimeout(() => {
+        setShowPersonalMorning(true);
+        setPersonalMorningKey(prev => prev + 1);
+      }, 3000); // Show after phase notification
+      timers.push(personalTimer);
+
+      // Then show morning summary after personal popup auto-closes (4.5s display time)
+      const summaryTimer = setTimeout(() => {
+        setShowMorningSummary(true);
+        setMorningSummaryKey(prev => prev + 1);
+      }, 7500); // 3s phase + 4.5s personal popup
+      timers.push(summaryTimer);
+    } else {
+      // No investigations, just show morning summary after phase notification
+      const summaryTimer = setTimeout(() => {
+        setShowMorningSummary(true);
+        setMorningSummaryKey(prev => prev + 1);
+      }, 3000); // Show after phase notification
+      timers.push(summaryTimer);
     }
-  }, [gameState.phase, lastNightDeaths, investigationResults.length, showPersonalMorning, showMorningSummary]);
+
+    return () => {
+      timers.forEach(timer => clearTimeout(timer));
+    };
+  }, [gameState.phase, lastNightDeaths, investigationResults.length, isPlayerDead]);
 
   const handleStartGame = () => {
     socket.emit('start_game', {
@@ -636,6 +731,15 @@ function GamePage() {
                 </>
               )}
 
+              {/* Player Role Assignment */}
+              <WaitingRoomPlayerList
+                players={gameState.players}
+                isHost={gameState.isHost}
+                socket={socket}
+                gameId={gameId}
+                playerRoleAssignments={playerRoleAssignments}
+              />
+
               {/* Role Configuration Tab */}
               <RoleConfigTab
                 gameState={gameState}
@@ -651,6 +755,7 @@ function GamePage() {
               myRole={myRole}
               gameEvents={gameEvents}
               isAlive={gameState.players.find(p => p.username === user?.username)?.alive ?? true}
+              myUserId={socket?.userId || user?.id}
             />
           )}
         </div>
@@ -784,8 +889,20 @@ function GamePage() {
             </div>
           )}
 
+          {/* Dusk Ability Usage (also available during setup for "dawn" abilities) */}
+          {(gameState.phase === 'dusk' || gameState.phase === 'setup') && myRole &&
+            gameState.players.find(p => p.username === user?.username)?.alive && (
+            <DuskActionPanel
+              role={myRole}
+              targets={gameState.alivePlayers}
+              gameId={gameId}
+              socket={socket}
+            />
+          )}
+
           {/* Role Ability Usage */}
-          {gameState.phase === 'night' && myRole && (
+          {gameState.phase === 'night' && myRole &&
+            gameState.players.find(p => p.username === user?.username)?.alive && (
             <NightActionPanel
               role={myRole}
               targets={gameState.alivePlayers}
@@ -857,6 +974,23 @@ function GamePage() {
           socket={socket}
           isModal={true}
           onVoteSubmit={() => setShowVotingModal(false)}
+        />
+      )}
+
+      {/* Jail Notification Modal */}
+      {jailNotification && (
+        <JailNotificationModal
+          jailerName={jailNotification.jailerName}
+          onClose={() => setJailNotification(null)}
+        />
+      )}
+
+      {/* RPS Challenge Modal - Pirate Duel */}
+      {rpsChallenge && (
+        <RPSChallengeModal
+          challengerName={rpsChallenge.challengerName}
+          socket={socket}
+          onClose={() => setRpsChallenge(null)}
         />
       )}
 

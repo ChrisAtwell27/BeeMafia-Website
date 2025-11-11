@@ -69,12 +69,11 @@ function MultiAbilityNightPanel({ role, targets, gameId, socket }) {
     });
 
     // Mark this specific ability as submitted
+    const wasSubmitted = submitted[abilityId];
     setSubmitted(prev => ({ ...prev, [abilityId]: true }));
-    toast.success('Action submitted!');
+    toast.success(wasSubmitted ? 'Action changed!' : 'Action submitted!');
 
-    // Reset target selection
-    setSelectedTarget('');
-    setSelectedTarget2('');
+    // Keep target selection to allow changing
   };
 
   const handleAbilitySwitch = (index) => {
@@ -104,7 +103,6 @@ function MultiAbilityNightPanel({ role, targets, gameId, socket }) {
                 key={id}
                 onClick={() => handleAbilitySwitch(index)}
                 className={`ability-tab ${activeAbility === index ? 'active' : ''} ${isSubmitted ? 'submitted' : ''}`}
-                disabled={isSubmitted}
               >
                 {id.replace(/_/g, ' ')}
                 {isSubmitted && ' ✓'}
@@ -122,7 +120,6 @@ function MultiAbilityNightPanel({ role, targets, gameId, socket }) {
         <div className="self-action">
           <button
             onClick={handleSubmit}
-            disabled={isCurrentAbilitySubmitted}
             className="btn-action btn-primary"
           >
             {isCurrentAbilitySubmitted ? '✓ Action Submitted' : `Use Ability`}
@@ -132,6 +129,9 @@ function MultiAbilityNightPanel({ role, targets, gameId, socket }) {
               {abilityConfig.vests && `${abilityConfig.vests} uses remaining`}
               {abilityConfig.alerts && `${abilityConfig.alerts} uses remaining`}
             </p>
+          )}
+          {isCurrentAbilitySubmitted && (
+            <p className="action-confirmation">Your action has been submitted (you can change it)</p>
           )}
         </div>
       ) : (
@@ -144,7 +144,6 @@ function MultiAbilityNightPanel({ role, targets, gameId, socket }) {
               id="target-select"
               value={selectedTarget}
               onChange={(e) => setSelectedTarget(e.target.value)}
-              disabled={isCurrentAbilitySubmitted}
               className="target-dropdown"
             >
               <option value="">-- Select a player --</option>
@@ -165,30 +164,29 @@ function MultiAbilityNightPanel({ role, targets, gameId, socket }) {
                 id="target2-select"
                 value={selectedTarget2}
                 onChange={(e) => setSelectedTarget2(e.target.value)}
-                disabled={isCurrentAbilitySubmitted}
                 className="target-dropdown"
               >
                 <option value="">-- Select a player --</option>
                 {targets?.map((target) => (
                   <option key={target.id} value={target.id}>
                     {target.username}
-                  </option>
-                ))}
-              </select>
-            </div>
+                </option>
+              ))}
+            </select>
+          </div>
           )}
 
           <button
             onClick={handleSubmit}
-            disabled={isCurrentAbilitySubmitted || !selectedTarget}
+            disabled={!selectedTarget}
             className="btn-action btn-primary"
           >
-            {isCurrentAbilitySubmitted ? '✓ Action Submitted' : 'Submit Action'}
+            {isCurrentAbilitySubmitted ? '✓ Action Submitted - Click to Change' : 'Submit Action'}
           </button>
 
           {isCurrentAbilitySubmitted && (
             <p className="action-confirmation">
-              Your action has been submitted and will be processed at the end of the night.
+              Your action has been submitted and will be processed at the end of the night. You can change your target before the night ends.
             </p>
           )}
         </>
