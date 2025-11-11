@@ -48,15 +48,18 @@ export function SocketProvider({ children }) {
       setSocket(newSocket);
 
       return () => {
+        // Cleanup - close the socket that was created in this effect
         newSocket.close();
       };
     } else {
+      // If no username, cleanup any existing socket
       if (socket) {
         socket.close();
         setSocket(null);
         setConnected(false);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username, authToken]);
 
   const value = {

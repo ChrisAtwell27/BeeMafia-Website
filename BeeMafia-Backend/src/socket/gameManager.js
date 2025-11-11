@@ -64,7 +64,7 @@ function performBotNightActions(game) {
 
     bots.forEach(bot => {
         const roleInfo = ROLES[bot.role];
-        if (!roleInfo.nightAction) return;
+        if (!roleInfo || !roleInfo.nightAction) return;
 
         const validTargets = alivePlayers.filter(p => p.id !== bot.id);
         if (validTargets.length === 0) return;
@@ -251,6 +251,7 @@ function performBotVotes(game) {
 
     bots.forEach(bot => {
         const roleInfo = ROLES[bot.role];
+        if (!roleInfo) return; // Safety check for invalid roles
         const botTeam = roleInfo.team;
         const validTargets = alivePlayers.filter(p => p.id !== bot.id);
 
@@ -1094,9 +1095,14 @@ function startNightPhase(io, gameId) {
 
     // Bots perform actions after a short delay (simulate thinking)
     // In debug mode with instant transitions, bots act immediately
-    const botActionDelay = game.debugMode && game.instantTransitions ? 100 : 2000;
+    // Capture values to avoid stale closures
+    const isDebugWithInstant = game.debugMode && game.instantTransitions;
+    const botActionDelay = isDebugWithInstant ? 100 : 2000;
     setTimeout(() => {
-        performBotNightActions(game);
+        // Re-fetch game to avoid stale reference
+        const currentGame = getGame(gameId);
+        if (!currentGame) return;
+        performBotNightActions(currentGame);
 
         // Send bot messages for realism
         if (game.debugMode) {
@@ -1117,9 +1123,12 @@ function startNightPhase(io, gameId) {
 
     // Auto-advance after night duration
     // In debug mode with instant transitions, phase is much shorter (unless custom durations are set)
-    const nightDuration = game.customDurations && game.customDurations.night
+    // Capture values to avoid stale closures
+    const hasCustomNightDuration = game.customDurations && game.customDurations.night;
+    const isDebugInstant = game.debugMode && game.instantTransitions;
+    const nightDuration = hasCustomNightDuration
         ? getPhaseDuration(game, 'night')
-        : (game.debugMode && game.instantTransitions ? 5000 : getPhaseDuration(game, 'night'));
+        : (isDebugInstant ? 5000 : getPhaseDuration(game, 'night'));
     setTimeout(() => {
         processNight(io, gameId);
     }, nightDuration);
@@ -1129,8 +1138,17 @@ function processNight(io, gameId) {
     const game = getGame(gameId);
     if (!game) return;
 
-    // Process all night actions
-    const results = processNightActions(game);
+    // Process all night actions with error handling
+    let results;
+    try {
+        results = processNightActions(game);
+    } catch (error) {
+        console.error(`❌ Error processing night actions in game ${gameId}:`, error);
+        // Send error to all players
+        io.to(gameId).emit('error', { message: 'An error occurred during the night. Starting day phase...' });
+        // Continue to day phase to avoid getting stuck
+        results = { deaths: [], investigations: new Map(), roleblocks: [], playerEvents: new Map(), conversions: [] };
+    }
 
     // Send public night results (deaths) to all players
     io.to(gameId).emit('night_results', {
@@ -1232,11 +1250,15 @@ function startDayPhase(io, gameId) {
 
     // Send bot messages during day phase
     if (game.debugMode) {
+        const botMessageDelay = Math.floor(discussionDuration * 0.3);
         setTimeout(() => {
-            const botPlayers = game.players.filter(p => p.isBot && p.alive);
+            // Re-fetch game to avoid stale reference
+            const currentGame = getGame(gameId);
+            if (!currentGame) return;
+            const botPlayers = currentGame.players.filter(p => p.isBot && p.alive);
             botPlayers.forEach(bot => {
                 if (Math.random() < 0.4) { // 40% chance to send message
-                    const message = generateBotMessage(bot, game, 'day');
+                    const message = generateBotMessage(bot, currentGame, 'day');
                     io.to(gameId).emit('chat_message', {
                         userId: bot.id,
                         username: bot.username,
@@ -1245,7 +1267,7 @@ function startDayPhase(io, gameId) {
                     });
                 }
             });
-        }, Math.floor(discussionDuration * 0.3)); // Send messages 30% into discussion
+        }, botMessageDelay); // Send messages 30% into discussion
     }
 
     setTimeout(() => {
@@ -1272,16 +1294,21 @@ function startVotingPhase(io, gameId) {
     });
 
     // Bots vote after a short delay (simulate thinking)
-    const botVoteDelay = game.debugMode && game.instantTransitions ? 500 : 3000;
+    const isDebugInstant = game.debugMode && game.instantTransitions;
+    const botVoteDelay = isDebugInstant ? 500 : 3000;
+    const shouldSendBotMessages = game.debugMode;
     setTimeout(() => {
-        performBotVotes(game);
+        // Re-fetch game to avoid stale reference
+        const currentGame = getGame(gameId);
+        if (!currentGame) return;
+        performBotVotes(currentGame);
 
         // Send bot voting messages
-        if (game.debugMode) {
-            const botPlayers = game.players.filter(p => p.isBot && p.alive);
+        if (shouldSendBotMessages) {
+            const botPlayers = currentGame.players.filter(p => p.isBot && p.alive);
             botPlayers.forEach(bot => {
                 if (Math.random() < 0.3) { // 30% chance to send message
-                    const message = generateBotMessage(bot, game, 'voting');
+                    const message = generateBotMessage(bot, currentGame, 'voting');
                     io.to(gameId).emit('chat_message', {
                         userId: bot.id,
                         username: bot.username,
@@ -1310,12 +1337,27 @@ function processVotes(io, gameId) {
     const maxVotes = Math.max(...Object.values(voteCounts), 0);
 
     if (maxVotes > 0) {
-        const lynched = Object.keys(voteCounts).find(id => voteCounts[id] === maxVotes);
+        // Get all players with max votes (for tie-breaking)
+        const tiedPlayers = Object.keys(voteCounts).filter(id => voteCounts[id] === maxVotes);
+
+        // Deterministic tie-breaking: random selection
+        const lynched = tiedPlayers[Math.floor(Math.random() * tiedPlayers.length)];
         const lynchedPlayer = game.players.find(p => p.id === lynched);
 
         if (lynchedPlayer) {
             lynchedPlayer.alive = false;
             const roleInfo = ROLES[lynchedPlayer.role];
+
+            // Log tie if there was one
+            if (tiedPlayers.length > 1) {
+                console.log(`🎲 Vote tie between ${tiedPlayers.length} players - randomly selected ${lynchedPlayer.username}`);
+            }
+
+            // Safety check for role info
+            if (!roleInfo) {
+                console.error(`⚠️ Invalid role for player ${lynchedPlayer.username}: ${lynchedPlayer.role}`);
+                return;
+            }
 
             io.to(gameId).emit('player_lynched', {
                 player: { id: lynchedPlayer.id, username: lynchedPlayer.username },

@@ -344,7 +344,9 @@ function GamePage() {
       socket.off('player_joined_game');
       socket.off('player_left_game');
       socket.off('game_started');
+      socket.off('bots_added');
       socket.off('role_assigned');
+      socket.off('role_changed');
       socket.off('phase_changed');
       socket.off('night_results');
       socket.off('investigation_result');
@@ -357,7 +359,7 @@ function GamePage() {
       socket.off('error');
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [socket, gameId, navigate, user]);
+  }, [socket, gameId]);
 
   // Timer countdown
   useEffect(() => {
@@ -396,7 +398,7 @@ function GamePage() {
       }, 4500);
       return () => clearTimeout(timer);
     }
-  }, [gameState.phase, lastNightDeaths, investigationResults, showPersonalMorning, showMorningSummary]);
+  }, [gameState.phase, lastNightDeaths, investigationResults.length, showPersonalMorning, showMorningSummary]);
 
   const handleStartGame = () => {
     socket.emit('start_game', {
