@@ -7,6 +7,16 @@ const { ROLES } = require('../../../shared/roles');
 const { getPlayerTeam } = require('../../../shared/game/gameUtils');
 const { addVisit } = require('../../../shared/game/gameState');
 
+/**
+ * Helper function to safely add an event to a player
+ */
+function addPlayerEvent(playerEvents, playerId, event) {
+    if (!playerEvents.has(playerId)) {
+        playerEvents.set(playerId, []);
+    }
+    playerEvents.get(playerId).push(event);
+}
+
 function processNightActions(game) {
     const results = [];
     const attacks = new Map(); // targetId -> [{attackerId, attack}]
@@ -66,8 +76,7 @@ function processNightActions(game) {
             console.log(`🚫 ${game.players.find(p => p.id === playerId)?.username} roleblocked ${game.players.find(p => p.id === action.target)?.username}`);
 
             // Track roleblock event for target
-            if (!playerEvents.has(action.target)) playerEvents.set(action.target, []);
-            playerEvents.get(action.target).push({ type: 'roleblocked' });
+            addPlayerEvent(playerEvents, action.target, { type: 'roleblocked' });
         }
     });
 
@@ -89,32 +98,28 @@ function processNightActions(game) {
             if (game.poisonedPlayers.has(action.target)) {
                 game.poisonedPlayers.delete(action.target);
                 // Track poison cured event
-                if (!playerEvents.has(action.target)) playerEvents.set(action.target, []);
-                playerEvents.get(action.target).push({ type: 'cured' });
+                addPlayerEvent(playerEvents, action.target, { type: 'cured' });
             }
         }
 
         if (action.action === 'guard' && action.target) {
             protections.set(action.target, 2); // Powerful protection from bodyguard
             // Track protection event
-            if (!playerEvents.has(action.target)) playerEvents.set(action.target, []);
-            playerEvents.get(action.target).push({ type: 'protected' });
+            addPlayerEvent(playerEvents, action.target, { type: 'protected' });
         }
 
         if (action.action === 'vest') {
             protections.set(playerId, 2); // Powerful protection from vest
             if (player.vests > 0) player.vests--;
             // Track self-protection event
-            if (!playerEvents.has(playerId)) playerEvents.set(playerId, []);
-            playerEvents.get(playerId).push({ type: 'protected' });
+            addPlayerEvent(playerEvents, playerId, { type: 'protected' });
         }
 
         if (action.action === 'jail' && action.target) {
             roleblocks.add(action.target);
             protections.set(action.target, 3); // Invincible in jail
             // Track jail event
-            if (!playerEvents.has(action.target)) playerEvents.set(action.target, []);
-            playerEvents.get(action.target).push({ type: 'jailed' });
+            addPlayerEvent(playerEvents, action.target, { type: 'jailed' });
         }
     });
 
@@ -177,8 +182,7 @@ function processNightActions(game) {
             });
 
             // Track poison event
-            if (!playerEvents.has(target)) playerEvents.set(target, []);
-            playerEvents.get(target).push({ type: 'poisoned' });
+            addPlayerEvent(playerEvents, target, { type: 'poisoned' });
         }
 
         // Werewolf - only on full moon nights
@@ -247,8 +251,7 @@ function processNightActions(game) {
             });
 
             // Track death event
-            if (!playerEvents.has(targetId)) playerEvents.set(targetId, []);
-            playerEvents.get(targetId).push({ type: 'killed', reason: 'killed', killedBy: killedBy });
+            addPlayerEvent(playerEvents, targetId, { type: 'killed', reason: 'killed', killedBy: killedBy });
 
             // Check if Soldier killed a Bee (guilt mechanic)
             attackList.forEach(attacker => {
@@ -302,14 +305,12 @@ function processNightActions(game) {
             }
         } else {
             // Attack failed - player survived
-            if (!playerEvents.has(targetId)) playerEvents.set(targetId, []);
-
             // Determine reason for survival
             if (healers.has(targetId)) {
-                playerEvents.get(targetId).push({ type: 'healed' });
+                addPlayerEvent(playerEvents, targetId, { type: 'healed' });
             } else if (protectionDefense > 0 || baseDefense > 0) {
                 // Was protected or has natural defense
-                playerEvents.get(targetId).push({ type: 'attacked' });
+                addPlayerEvent(playerEvents, targetId, { type: 'attacked' });
             }
         }
     });
@@ -582,8 +583,7 @@ function processNightActions(game) {
             });
 
             // Track infection event
-            if (!playerEvents.has(infection.targetId)) playerEvents.set(infection.targetId, []);
-            playerEvents.get(infection.targetId).push({
+            addPlayerEvent(playerEvents, infection.targetId, {
                 type: 'infected',
                 message: 'You have been infected and turned into a Zombee!'
             });
@@ -591,8 +591,7 @@ function processNightActions(game) {
             console.log(`🧟 ${target.username} was infected and converted to Zombee (defense: ${totalDefense})`);
         } else {
             // Target had strong defense (2+) and resisted infection
-            if (!playerEvents.has(infection.targetId)) playerEvents.set(infection.targetId, []);
-            playerEvents.get(infection.targetId).push({
+            addPlayerEvent(playerEvents, infection.targetId, {
                 type: 'infection_resisted',
                 message: 'You resisted a zombee infection!'
             });
