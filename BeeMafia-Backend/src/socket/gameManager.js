@@ -771,7 +771,11 @@ function joinGame(socket, io, data) {
 
     io.to(gameRoom.gameId).emit('player_joined_game', {
         player: { username: socket.username, userId: socket.userId },
-        players: gameRoom.players.map(p => ({ username: p.username, userId: p.id }))
+        players: gameRoom.players.map(p => ({
+            username: p.username,
+            userId: p.id,
+            isHost: p.id === gameRoom.hostId
+        }))
     });
 
     socket.emit('joined_game', { gameId: gameRoom.gameId, game: gameRoom });
@@ -808,14 +812,25 @@ function leaveGame(socket, io, data) {
         }
         console.log(`Game deleted (empty): ${gameId}`);
     } else if (gameRoom.hostId === socket.userId) {
-        gameRoom.hostId = gameRoom.players[0].id;
-        gameRoom.host = gameRoom.players[0].username;
-        io.to(gameId).emit('host_changed', { host: gameRoom.host });
+        // Host left, reassign to next player if available
+        if (gameRoom.players.length > 0) {
+            gameRoom.hostId = gameRoom.players[0].id;
+            gameRoom.host = gameRoom.players[0].username;
+            io.to(gameId).emit('host_changed', {
+                host: gameRoom.host,
+                hostId: gameRoom.hostId
+            });
+            console.log(`Host reassigned to ${gameRoom.host} in game ${gameId}`);
+        }
     }
 
     io.to(gameId).emit('player_left_game', {
         player: { username: socket.username, userId: socket.userId },
-        players: gameRoom.players.map(p => ({ username: p.username, userId: p.id }))
+        players: gameRoom.players.map(p => ({
+            username: p.username,
+            userId: p.id,
+            isHost: p.id === gameRoom.hostId
+        }))
     });
 
     updateLobby(io);
@@ -1864,7 +1879,13 @@ function returnToLobby(socket, io, data) {
     // Emit to all players that they're back in lobby
     io.to(gameId).emit('returned_to_lobby', {
         gameId,
-        players: gameRoom.players,
+        players: gameRoom.players.map(p => ({
+            username: p.username,
+            userId: p.id,
+            ready: p.ready || false,
+            isHost: p.id === gameRoom.hostId,
+            isBot: p.isBot || false
+        })),
         customRoles: gameRoom.customRoles || []
     });
 
