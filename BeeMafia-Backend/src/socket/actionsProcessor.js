@@ -51,6 +51,59 @@ function processNightActions(game) {
         }
     });
 
+    // Step 1.5: Process Transporter - swap targets (happens before other actions)
+    const transports = new Map(); // targetId -> swappedTargetId
+    Object.entries(game.nightActions).forEach(([playerId, action]) => {
+        if (action.action === 'transport' && action.target && action.target2) {
+            // Create bidirectional swap mapping
+            transports.set(action.target, action.target2);
+            transports.set(action.target2, action.target);
+
+            addPlayerEvent(playerEvents, playerId, {
+                type: 'transported',
+                message: `You swapped ${game.players.find(p => p.id === action.target)?.username} and ${game.players.find(p => p.id === action.target2)?.username}`
+            });
+
+            console.log(`🔄 ${game.players.find(p => p.id === playerId)?.username} transported ${game.players.find(p => p.id === action.target)?.username} and ${game.players.find(p => p.id === action.target2)?.username}`);
+        }
+    });
+
+    // Apply transports - redirect all actions
+    if (transports.size > 0) {
+        Object.values(game.nightActions).forEach(action => {
+            if (action.target && transports.has(action.target)) {
+                action.target = transports.get(action.target);
+            }
+            if (action.target2 && transports.has(action.target2)) {
+                action.target2 = transports.get(action.target2);
+            }
+        });
+    }
+
+    // Step 1.6: Process Witch - control a player to target someone else
+    Object.entries(game.nightActions).forEach(([playerId, action]) => {
+        if (action.action === 'witch' && action.target && action.target2) {
+            // Find the controlled player's action
+            const controlledAction = game.nightActions[action.target];
+            if (controlledAction && controlledAction.target) {
+                // Redirect their action to target2
+                controlledAction.target = action.target2;
+
+                addPlayerEvent(playerEvents, playerId, {
+                    type: 'witch_controlled',
+                    message: `You controlled ${game.players.find(p => p.id === action.target)?.username} to target ${game.players.find(p => p.id === action.target2)?.username}`
+                });
+
+                addPlayerEvent(playerEvents, action.target, {
+                    type: 'controlled',
+                    message: 'You feel a strange force controlling your actions...'
+                });
+
+                console.log(`🕷️ ${game.players.find(p => p.id === playerId)?.username} controlled ${game.players.find(p => p.id === action.target)?.username} to target ${game.players.find(p => p.id === action.target2)?.username}`);
+            }
+        }
+    });
+
     // Step 2: Process zombee infection votes
     const infections = [];
     if (game.zombeeVotes && Object.keys(game.zombeeVotes).length > 0) {
@@ -92,6 +145,13 @@ function processNightActions(game) {
 
             // Track roleblock event for target
             addPlayerEvent(playerEvents, action.target, { type: 'roleblocked' });
+        }
+
+        // Trap - set trap on a player's house
+        if (action.action === 'trap' && action.target) {
+            // We'll process the trap later after we know who visited
+            if (!game.traps) game.traps = new Map();
+            game.traps.set(action.target, playerId); // Map trapped player to trapper
         }
     });
 
@@ -221,6 +281,13 @@ function processNightActions(game) {
             // Track self-protection event
             addPlayerEvent(playerEvents, playerId, { type: 'protected' });
         }
+
+        // Guardian Ant - protect assigned target
+        if (action.action === 'guardian' && action.target) {
+            protections.set(action.target, 2); // Powerful protection
+            // Track protection event
+            addPlayerEvent(playerEvents, action.target, { type: 'protected' });
+        }
     });
 
     // Step 4: Process attacks (affected by roleblock)
@@ -319,6 +386,32 @@ function processNightActions(game) {
 
             // Track poison event
             addPlayerEvent(playerEvents, target, { type: 'poisoned' });
+        }
+
+        // Arsonist - douse or ignite
+        if (action.action === 'arsonist') {
+            if (!game.dousedPlayers) game.dousedPlayers = new Set();
+
+            if (action.ignite) {
+                // Ignite all doused players with unstoppable attack
+                game.dousedPlayers.forEach(dousedId => {
+                    if (!attacks.has(dousedId)) attacks.set(dousedId, []);
+                    attacks.get(dousedId).push({ attackerId: playerId, attack: 3 }); // Unstoppable
+                });
+                // Clear doused players after igniting
+                game.dousedPlayers.clear();
+                addPlayerEvent(playerEvents, playerId, {
+                    type: 'ignited',
+                    message: 'You ignited all doused players!'
+                });
+            } else if (target) {
+                // Douse the target
+                game.dousedPlayers.add(target);
+                addPlayerEvent(playerEvents, playerId, {
+                    type: 'doused',
+                    message: `You doused ${game.players.find(p => p.id === target)?.username}`
+                });
+            }
         }
 
         // Werewolf - only on full moon nights
@@ -735,6 +828,165 @@ function processNightActions(game) {
             });
 
             console.log(`🧟 ${target.username} resisted infection (defense: ${totalDefense})`);
+        }
+    });
+
+    // Step 9: Process Deceptive Abilities (Clean, Disguise, Blackmail, Deceive, Hypnotize)
+    Object.entries(game.nightActions).forEach(([playerId, action]) => {
+        if (roleblocks.has(playerId)) return; // Roleblocked
+
+        // Janitor - Clean a dead body
+        if (action.action === 'clean' && action.target) {
+            const targetPlayer = game.players.find(p => p.id === action.target);
+            if (targetPlayer && !targetPlayer.alive) {
+                // Mark player as cleaned
+                if (!game.cleanedPlayers) game.cleanedPlayers = new Set();
+                game.cleanedPlayers.add(action.target);
+
+                const player = game.players.find(p => p.id === playerId);
+                if (player.cleans > 0) player.cleans--;
+
+                addPlayerEvent(playerEvents, playerId, {
+                    type: 'cleaned',
+                    message: `You cleaned ${targetPlayer.username}'s body - their role is hidden`
+                });
+
+                console.log(`🧹 ${game.players.find(p => p.id === playerId)?.username} cleaned ${targetPlayer.username}'s body`);
+            }
+        }
+
+        // Disguiser - Disguise as a dead player
+        if (action.action === 'disguise' && action.target) {
+            const targetPlayer = game.players.find(p => p.id === action.target);
+            if (targetPlayer && !targetPlayer.alive) {
+                const player = game.players.find(p => p.id === playerId);
+                player.disguisedAs = action.target; // Store disguise
+
+                if (player.disguises > 0) player.disguises--;
+
+                addPlayerEvent(playerEvents, playerId, {
+                    type: 'disguised',
+                    message: `You disguised as ${targetPlayer.username} - investigators will see you as ${ROLES[targetPlayer.role]?.name}`
+                });
+
+                console.log(`🎪 ${player.username} disguised as ${targetPlayer.username}`);
+            }
+        }
+
+        // Blackmailer - Blackmail a player
+        if (action.action === 'blackmail' && action.target) {
+            if (!game.blackmailedPlayers) game.blackmailedPlayers = new Set();
+            game.blackmailedPlayers.add(action.target);
+
+            addPlayerEvent(playerEvents, action.target, {
+                type: 'blackmailed',
+                message: 'You have been blackmailed! You cannot speak during the next day phase.'
+            });
+
+            console.log(`🤐 ${game.players.find(p => p.id === playerId)?.username} blackmailed ${game.players.find(p => p.id === action.target)?.username}`);
+        }
+
+        // Deceiver - Deceive a player (twist their messages)
+        if (action.action === 'deceive' && action.target) {
+            if (!game.deceivedPlayers) game.deceivedPlayers = new Set();
+            game.deceivedPlayers.add(action.target);
+
+            addPlayerEvent(playerEvents, action.target, {
+                type: 'deceived',
+                message: 'Your words feel twisted... someone is deceiving you.'
+            });
+
+            console.log(`🎭 ${game.players.find(p => p.id === playerId)?.username} deceived ${game.players.find(p => p.id === action.target)?.username}`);
+        }
+
+        // Hypnotist - Give false information
+        if (action.action === 'hypnotize' && action.target) {
+            // Hypnotist modifies investigation results - handled in investigation processing
+            if (!game.hypnotizedPlayers) game.hypnotizedPlayers = new Map();
+            game.hypnotizedPlayers.set(action.target, playerId);
+
+            console.log(`🌀 ${game.players.find(p => p.id === playerId)?.username} hypnotized ${game.players.find(p => p.id === action.target)?.username}`);
+        }
+    });
+
+    // Step 10: Process Trap Results (after all actions)
+    if (game.traps) {
+        game.traps.forEach((trapperId, trappedPlayer) => {
+            const visitors = game.visits[trappedPlayer] || [];
+            const attackerVisitors = visitors.filter(visitorId => {
+                const visitorAction = game.nightActions[visitorId];
+                return visitorAction && (visitorAction.action === 'mafia_kill' || visitorAction.action === 'serial_kill' || visitorAction.action === 'shoot');
+            });
+
+            if (attackerVisitors.length > 0) {
+                // Roleblock all attackers
+                attackerVisitors.forEach(attackerId => {
+                    roleblocks.add(attackerId);
+                    addPlayerEvent(playerEvents, attackerId, {
+                        type: 'trapped',
+                        message: 'You were caught in a trap! Your action was blocked.'
+                    });
+                });
+
+                // Reveal attackers to trapper
+                const attackerNames = attackerVisitors.map(id => game.players.find(p => p.id === id)?.username).join(', ');
+                addPlayerEvent(playerEvents, trapperId, {
+                    type: 'trap_triggered',
+                    message: `Your trap caught: ${attackerNames}`
+                });
+
+                console.log(`🪤 Trap on ${game.players.find(p => p.id === trappedPlayer)?.username} caught: ${attackerNames}`);
+            }
+        });
+        // Clear traps after night
+        game.traps.clear();
+    }
+
+    // Step 11: Process Special Abilities (Retribution, Remember)
+    Object.entries(game.nightActions).forEach(([playerId, action]) => {
+        if (roleblocks.has(playerId)) return; // Roleblocked
+
+        // Retribution - Revive a dead bee
+        if (action.action === 'retribution' && action.target) {
+            const targetPlayer = game.players.find(p => p.id === action.target);
+            const targetRole = targetPlayer ? ROLES[targetPlayer.role] : null;
+
+            if (targetPlayer && !targetPlayer.alive && targetRole && targetRole.team === 'bee') {
+                const player = game.players.find(p => p.id === playerId);
+                if (!player.hasRevived) {
+                    // Store revived player info (they use ability this night)
+                    if (!game.revivedPlayers) game.revivedPlayers = new Map();
+                    game.revivedPlayers.set(action.target, playerId);
+
+                    player.hasRevived = true;
+
+                    addPlayerEvent(playerEvents, playerId, {
+                        type: 'revived',
+                        message: `You revived ${targetPlayer.username} to use their ability tonight`
+                    });
+
+                    console.log(`⚰️ ${player.username} revived ${targetPlayer.username} for one night`);
+                }
+            }
+        }
+
+        // Remember - Become a dead player's role
+        if (action.action === 'remember' && action.target) {
+            const targetPlayer = game.players.find(p => p.id === action.target);
+            const player = game.players.find(p => p.id === playerId);
+
+            if (targetPlayer && !targetPlayer.alive && player && !player.hasRemembered) {
+                // Change player's role to the dead player's role
+                player.role = targetPlayer.role;
+                player.hasRemembered = true;
+
+                addPlayerEvent(playerEvents, playerId, {
+                    type: 'remembered',
+                    message: `You remembered ${targetPlayer.username}'s role! You are now a ${ROLES[targetPlayer.role]?.name}`
+                });
+
+                console.log(`🪲 ${player.username} remembered ${targetPlayer.username}'s role (${ROLES[targetPlayer.role]?.name})`);
+            }
         }
     });
 

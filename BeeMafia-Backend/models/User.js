@@ -35,6 +35,12 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: null
     },
+    discordId: {
+        type: String,
+        default: null,
+        sparse: true,
+        unique: true
+    },
     stats: {
         gamesPlayed: { type: Number, default: 0 },
         gamesWon: { type: Number, default: 0 },
@@ -123,6 +129,7 @@ userSchema.methods.getPublicProfile = function() {
         username: this.username,
         displayName: this.displayName,
         avatar: this.avatar,
+        discordId: this.discordId,
         stats: this.stats,
         currency: this.currency,
         customRoles: this.customRoles || []

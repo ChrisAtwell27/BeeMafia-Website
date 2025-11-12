@@ -13,6 +13,8 @@ const { activePlayers, activeGameRooms, updateLobby } = require('./lobbyManager'
 const { processNightActions } = require('./actionsProcessor');
 const User = require('../../models/User');
 const GameModel = require('../../models/Game');
+const discordVoiceControl = require('../services/discordVoiceControl');
+const emojiConverter = require('../services/emojiConverter');
 
 // Helper function to generate unique 6-character room codes
 function generateRoomCode() {
@@ -691,7 +693,7 @@ function broadcastRoleConfig(io, gameId, gameRoom) {
 }
 
 function createGame(socket, io, data) {
-    const { name, maxPlayers = 20, gameMode = 'basic', debugMode = false, isPrivate = false } = data;
+    const { name, maxPlayers = 20, gameMode = 'basic', debugMode = false, isPrivate = false, discordId } = data;
 
     if (activeGameRooms.size >= 5) {
         return socket.emit('error', { message: 'Maximum number of concurrent games reached' });
@@ -711,6 +713,7 @@ function createGame(socket, io, data) {
             id: socket.userId,
             username: socket.username,
             socketId: socket.id,
+            discordId: discordId || null,
             ready: false
         }],
         maxPlayers,
@@ -746,7 +749,7 @@ function createGame(socket, io, data) {
 }
 
 function joinGame(socket, io, data) {
-    const { gameId, roomCode } = data;
+    const { gameId, roomCode, discordId } = data;
 
     // If a room code is provided, find the game by room code
     let gameRoom;
@@ -791,6 +794,7 @@ function joinGame(socket, io, data) {
         id: socket.userId,
         username: socket.username,
         socketId: socket.id,
+        discordId: discordId || null,
         ready: false
     });
 
@@ -1029,6 +1033,7 @@ function startGame(socket, io, data) {
                 id: p.id,
                 username: p.username,
                 socketId: p.socketId,
+                discordId: p.discordId || null,
                 alive: true,
                 role: null,
                 isBot: p.isBot || false
@@ -1057,6 +1062,7 @@ function startGame(socket, io, data) {
                 id: p.id,
                 username: p.username,
                 socketId: p.socketId,
+                discordId: p.discordId || null,
                 alive: true,
                 role: null,
                 isBot: p.isBot || false
@@ -1081,6 +1087,19 @@ function startGame(socket, io, data) {
     );
 
     gameRoom.status = 'playing';
+
+    // Mute players in Discord voice chat if they have Mute Bee roles
+    gamePlayers.forEach(player => {
+        const roleInfo = ROLES[player.role];
+        if (roleInfo && roleInfo.isMuteBee) {
+            discordVoiceControl.mutePlayer(
+                player.discordId || player.id,
+                `Mute ${roleInfo.name} - permanently muted`
+            ).catch(err => {
+                console.error(`Voice control error muting Mute Bee ${player.username}:`, err);
+            });
+        }
+    });
 
     // Send role assignments privately (skip bots)
     gamePlayers.forEach(player => {
@@ -1185,6 +1204,11 @@ function startDuskPhase(io, gameId) {
         message: 'Dusk has fallen... Certain roles may now act.'
     });
 
+    // Control Discord voice chat - mute everyone during dusk
+    discordVoiceControl.handlePhaseChange(game).catch(err => {
+        console.error('Voice control error during dusk phase:', err);
+    });
+
     // Request dusk actions from players with duskAction roles
     game.players.forEach(player => {
         if (!player.alive || player.isBot) return;
@@ -1255,6 +1279,11 @@ function startNightPhase(io, gameId) {
         alivePlayers: alivePlayers.map(p => ({ id: p.id, username: p.username })),
         duration: getPhaseDuration(game, 'night') / 1000,
         isFullMoon: game.isFullMoon || false
+    });
+
+    // Control Discord voice chat - mute everyone during night
+    discordVoiceControl.handlePhaseChange(game).catch(err => {
+        console.error('Voice control error during night phase:', err);
     });
 
     // Prompt players for night actions
@@ -1417,6 +1446,18 @@ function processNight(io, gameId) {
         deaths: results.deaths || []
     });
 
+    // Mute dead players in Discord voice chat
+    if (results.deaths && results.deaths.length > 0) {
+        results.deaths.forEach(death => {
+            const player = game.players.find(p => p.id === death.playerId);
+            if (player) {
+                discordVoiceControl.handlePlayerDeath(player).catch(err => {
+                    console.error(`Voice control error muting dead player ${player.username}:`, err);
+                });
+            }
+        });
+    }
+
     // Send investigation results privately to investigators
     if (results.investigations) {
         results.investigations.forEach((investigationResult, investigatorId) => {
@@ -1504,6 +1545,11 @@ function startDayPhase(io, gameId) {
         duration: getPhaseDuration(game, 'day') / 1000
     });
 
+    // Control Discord voice chat - unmute alive players (except blackmailed)
+    discordVoiceControl.handlePhaseChange(game).catch(err => {
+        console.error('Voice control error during day phase:', err);
+    });
+
     // Auto-advance to voting after day duration
     // In debug mode with instant transitions, discussion is much shorter (unless custom durations are set)
     const discussionDuration = game.customDurations && game.customDurations.day
@@ -1553,6 +1599,11 @@ function startVotingPhase(io, gameId) {
         players: game.players.map(p => ({ id: p.id, username: p.username, alive: p.alive !== false, isBot: p.isBot })),
         votingTargets: alivePlayers.map(p => ({ id: p.id, username: p.username })),
         duration: getPhaseDuration(game, 'voting') / 1000
+    });
+
+    // Control Discord voice chat - maintain current state (blackmailed still muted)
+    discordVoiceControl.handlePhaseChange(game).catch(err => {
+        console.error('Voice control error during voting phase:', err);
     });
 
     // Bots vote after a short delay (simulate thinking)
@@ -1626,6 +1677,11 @@ function processVotes(io, gameId) {
                 role: roleInfo.name,
                 team: roleInfo.team
             });
+
+            // Mute lynched player in Discord voice chat
+            discordVoiceControl.handlePlayerDeath(lynchedPlayer).catch(err => {
+                console.error(`Voice control error muting lynched player ${lynchedPlayer.username}:`, err);
+            });
         }
     } else {
         io.to(gameId).emit('no_lynch', { message: 'No one was voted out' });
@@ -1662,6 +1718,11 @@ async function endGame(io, gameId, winCondition) {
 
     game.phase = 'finished';
     gameRoom.status = 'finished';
+
+    // Control Discord voice chat - unmute everyone at game end
+    discordVoiceControl.handlePhaseChange(game).catch(err => {
+        console.error('Voice control error at game end:', err);
+    });
 
     const winners = determineWinners(game, winCondition.type, winCondition.winner);
 
@@ -1906,7 +1967,7 @@ function submitVote(socket, io, data) {
  * - "jailor": Jailor and their prisoner can see
  * - "mason": Only masons can see
  */
-function handleChatMessage(socket, io, data) {
+async function handleChatMessage(socket, io, data) {
     const player = activePlayers.get(socket.userId);
     if (!player || !player.gameId) {
         return;
@@ -1918,8 +1979,19 @@ function handleChatMessage(socket, io, data) {
     const gamePlayer = game.players.find(p => p.id === socket.userId);
     if (!gamePlayer) return;
 
-    const { message, channel = 'all' } = data;
+    let { message, channel = 'all' } = data;
     const role = ROLES[gamePlayer.role];
+
+    // Check if player has a Mute Bee role - convert their message to emojis
+    if (role && role.isMuteBee) {
+        try {
+            message = await emojiConverter.convertToEmojis(message);
+        } catch (error) {
+            console.error('Error converting message to emojis:', error);
+            // Fallback to simple emoji if conversion fails
+            message = '🐝💬';
+        }
+    }
 
     // Determine visibility for the message
     // All living players can chat at any time (smart text system)
@@ -1970,7 +2042,8 @@ function handleChatMessage(socket, io, data) {
         timestamp: Date.now(),
         isDead: !gamePlayer.alive, // Tag if message is from a dead player
         visibilityTag: visibilityTag, // Tag for special visibility (wasp, zombee, mason, jail)
-        jailData: jailData // Information about jail partnership if applicable
+        jailData: jailData, // Information about jail partnership if applicable
+        isMuteBee: role && role.isMuteBee // Flag for emoji-converted messages
     };
 
     // Send to all players in the game
@@ -2305,6 +2378,40 @@ function clearRoleAssignments(socket, io, data) {
     console.log(`🎭 ${socket.username} cleared all role assignments in game ${gameId}`);
 }
 
+function setDiscordId(socket, io, data) {
+    const { discordId } = data;
+    const player = activePlayers.get(socket.userId);
+
+    if (!player || !player.gameId) {
+        return socket.emit('error', { message: 'Not in a game' });
+    }
+
+    const gameRoom = activeGameRooms.get(player.gameId);
+    if (!gameRoom) {
+        return socket.emit('error', { message: 'Game not found' });
+    }
+
+    if (gameRoom.status !== 'waiting') {
+        return socket.emit('error', { message: 'Cannot change Discord ID after game has started' });
+    }
+
+    // Update the player's Discord ID in the game room
+    const gamePlayer = gameRoom.players.find(p => p.id === socket.userId);
+    if (gamePlayer) {
+        gamePlayer.discordId = discordId;
+
+        // Broadcast update to all players in the room
+        io.to(player.gameId).emit('player_discord_updated', {
+            userId: socket.userId,
+            username: socket.username,
+            hasDiscordId: !!discordId
+        });
+
+        socket.emit('discord_id_set', { success: true });
+        console.log(`🎮 ${socket.username} set Discord ID: ${discordId ? 'Yes' : 'Removed'}`);
+    }
+}
+
 function returnToLobby(socket, io, data) {
     const { gameId } = data;
     const gameRoom = activeGameRooms.get(gameId);
@@ -2368,6 +2475,7 @@ module.exports = {
     handleWaspChat,
     handleDeadChat,
     handleDisconnect,
+    setDiscordId,
     returnToLobby,
     // Role configuration handlers
     getRoleConfig,

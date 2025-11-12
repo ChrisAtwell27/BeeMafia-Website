@@ -18,7 +18,8 @@
       "Bash(timeout 30 npm start:*)",
       "Bash(node:*)",
       "Bash(npm run build:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(timeout 10 node:*)"
     ],
     "deny": [],
     "ask": []

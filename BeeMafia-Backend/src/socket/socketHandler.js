@@ -84,6 +84,11 @@ function initializeSocketHandlers(io) {
             gameManager.clearRoleAssignments(socket, io, data);
         });
 
+        // Set Discord ID for voice chat integration
+        socket.on('set_discord_id', (data) => {
+            gameManager.setDiscordId(socket, io, data);
+        });
+
         // Submit dusk action
         socket.on('dusk_action', (data) => {
             gameManager.submitDuskAction(socket, io, data);

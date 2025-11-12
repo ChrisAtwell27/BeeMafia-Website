@@ -24,6 +24,7 @@ function LobbyPage() {
   const [debugMode, setDebugMode] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
   const [roomCode, setRoomCode] = useState('');
+  const [discordId, setDiscordId] = useState(localStorage.getItem('discordId') || '');
 
 
   // Modal states
@@ -144,12 +145,18 @@ function LobbyPage() {
   const handleCreateGame = () => {
     const trimmedName = gameName.trim() || `${username}'s room`;
 
+    // Save Discord ID to localStorage for future use
+    if (discordId.trim()) {
+      localStorage.setItem('discordId', discordId.trim());
+    }
+
     socket.emit('create_game', {
       name: trimmedName,
       maxPlayers,
       gameMode: 'custom',
       debugMode,
-      isPrivate
+      isPrivate,
+      discordId: discordId.trim() || null
     });
 
     // Reset form
@@ -158,20 +165,34 @@ function LobbyPage() {
   };
 
   const handleJoinGame = (game) => {
+    // Save Discord ID to localStorage for future use
+    if (discordId.trim()) {
+      localStorage.setItem('discordId', discordId.trim());
+    }
+
     if (game.isPrivate) {
       setPendingJoinGame(game);
       setShowPasswordModal(true);
     } else {
-      socket.emit('join_game', { gameId: game.gameId });
+      socket.emit('join_game', {
+        gameId: game.gameId,
+        discordId: discordId.trim() || null
+      });
     }
   };
 
   const handleJoinWithCode = (code) => {
+    // Save Discord ID to localStorage for future use
+    if (discordId.trim()) {
+      localStorage.setItem('discordId', discordId.trim());
+    }
+
     const game = games.find(g => g.roomCode === code.toUpperCase());
     if (game) {
       socket.emit('join_game', {
         gameId: game.gameId,
-        roomCode: code.toUpperCase()
+        roomCode: code.toUpperCase(),
+        discordId: discordId.trim() || null
       });
     } else {
       toast.error('Invalid room code');
@@ -184,9 +205,15 @@ function LobbyPage() {
       return;
     }
 
+    // Save Discord ID to localStorage for future use
+    if (discordId.trim()) {
+      localStorage.setItem('discordId', discordId.trim());
+    }
+
     socket.emit('join_game', {
       gameId: pendingJoinGame.gameId,
-      roomCode: enteredCode.toUpperCase()
+      roomCode: enteredCode.toUpperCase(),
+      discordId: discordId.trim() || null
     });
     setEnteredCode('');
   };
@@ -346,6 +373,25 @@ function LobbyPage() {
                   If private, your room will not appear on the public rooms list.
                   You will have to share the room's URL with other players.
                 </div>
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginTop: '1rem' }}>
+              <label>
+                Discord User ID (for voice chat)
+                <span style={{ color: '#888', fontSize: '0.85em', marginLeft: '0.5rem' }}>Optional</span>
+              </label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Right-click your Discord name → Copy User ID"
+                value={discordId}
+                onChange={(e) => setDiscordId(e.target.value)}
+                style={{ fontFamily: 'monospace' }}
+              />
+              <div className="private-info" style={{ marginTop: '0.5rem' }}>
+                Enable Developer Mode in Discord → Right-click your name → Copy User ID.
+                Required for automatic voice muting during night phases.
               </div>
             </div>
 
